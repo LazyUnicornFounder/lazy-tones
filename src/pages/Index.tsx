@@ -319,7 +319,7 @@ export default function Index() {
                       <Loader2 className="h-6 w-6 text-primary animate-spin" />
                       <span className="text-xs text-muted-foreground">Regenerating…</span>
                     </div>
-                  ) : img.url && !img.url.startsWith("data:image/svg+xml") ? (
+                  ) : img.url ? (
                     <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-accent">

@@ -127,9 +127,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate 6 images in parallel via Replicate with retry
+    // Generate 6 images with guarded fallbacks and lighter concurrency
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
-    const prompts = spec.image_prompts.slice(0, 6);
+    const SHOT_FALLBACKS = [
+      "hero editorial composition",
+      "material texture close-up",
+      "atmospheric interior or environment scene",
+      "object still life with curated props",
+      "fashion or portrait-inspired frame",
+      "abstract accent composition",
+    ];
+    const promptCandidates = Array.isArray(spec.image_prompts)
+      ? spec.image_prompts.filter((value: unknown): value is string => typeof value === "string" && value.trim().length > 0)
+      : [];
+    const prompts = Array.from({ length: 6 }, (_, index) =>
+      promptCandidates[index] || `${prompt}. ${SHOT_FALLBACKS[index]}`
+    );
 
     const createFallbackImage = () => {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#f5f4ed"/><circle cx="280" cy="280" r="190" fill="#e8ded0"/><circle cx="910" cy="330" r="210" fill="#c96442" fill-opacity="0.18"/><circle cx="420" cy="880" r="220" fill="#d7c2b5" fill-opacity="0.7"/><rect x="500" y="640" width="420" height="220" rx="40" fill="#faf9f5" stroke="#e2dbd2" stroke-width="4"/><path d="M570 785C625 700 705 675 780 700C840 720 878 770 900 830" fill="none" stroke="#8b6f4e" stroke-opacity="0.35" stroke-width="18" stroke-linecap="round"/></svg>`;
@@ -173,6 +186,11 @@ Deno.serve(async (req) => {
 
     async function generateImage(originalPrompt: string, index: number, maxRetries = 5): Promise<{ url: string; sub_prompt: string }> {
       let prompt = originalPrompt;
+
+      if (!replicateToken) {
+        const gatewayImage = await generateGatewayImage(prompt);
+        return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
+      }
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -219,7 +237,7 @@ Deno.serve(async (req) => {
               console.log(`Softened prompt for tile ${index}: ${prompt}`);
               const gatewayImage = await generateGatewayImage(prompt);
               if (gatewayImage) {
-                return { url: gatewayImage, sub_prompt: originalPrompt };
+                return { url: gatewayImage.trim(), sub_prompt: originalPrompt };
               }
             }
             await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -227,8 +245,8 @@ Deno.serve(async (req) => {
           }
 
           const url = typeof result.output === "string"
-            ? result.output
-            : (Array.isArray(result.output) ? result.output[0] : "") || "";
+            ? result.output.trim()
+            : (Array.isArray(result.output) ? String(result.output[0] || "").trim() : "");
 
           if (url) {
             return { url, sub_prompt: originalPrompt };
@@ -241,15 +259,27 @@ Deno.serve(async (req) => {
       }
 
       const gatewayImage = await generateGatewayImage(prompt);
-      return { url: gatewayImage || createFallbackImage(), sub_prompt: originalPrompt };
+      return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
     }
 
-    const imagePromises = prompts.map((p, i) =>
-      new Promise<{ url: string; sub_prompt: string }>((resolve) =>
-        setTimeout(() => resolve(generateImage(p, i)), i * 1500)
-      )
-    );
-    const images = await Promise.all(imagePromises);
+    const images: { url: string; sub_prompt: string }[] = [];
+    for (let start = 0; start < prompts.length; start += 2) {
+      const batch = prompts.slice(start, start + 2);
+      const batchImages = await Promise.all(
+        batch.map((imagePrompt, offset) => generateImage(imagePrompt, start + offset))
+      );
+
+      images.push(
+        ...batchImages.map((image, offset) => ({
+          url: image.url.trim() || createFallbackImage(),
+          sub_prompt: image.sub_prompt.trim() || batch[offset],
+        }))
+      );
+
+      if (start + 2 < prompts.length) {
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+    }
 
     // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
