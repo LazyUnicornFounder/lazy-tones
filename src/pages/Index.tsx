@@ -16,15 +16,8 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       {/* Nav */}
-      <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
+      <nav className="flex items-center justify-center px-6 py-4 max-w-6xl mx-auto">
         <Link to="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</Link>
-        <div className="flex items-center gap-4">
-          {user && (
-            <Link to="/app">
-              <Button size="sm">Dashboard</Button>
-            </Link>
-          )}
-        </div>
       </nav>
 
       {/* Hero */}
