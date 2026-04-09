@@ -269,12 +269,6 @@ export default function Index() {
             </div>
             <div className={`flex items-center justify-center gap-2 transition-opacity duration-700 ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}>
               <button
-                onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
-                className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
-              </button>
-              <button
                 onClick={() => {
                   setIdeaVisible(false);
                   setTimeout(() => {
@@ -282,9 +276,15 @@ export default function Index() {
                     setIdeaVisible(true);
                   }, 300);
                 }}
-                className="w-6 h-6 rounded-full border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
+                className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <RefreshCw className="h-3 w-3" />
+              </button>
+              <button
+                onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
+                className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
               </button>
             </div>
             {error && (
