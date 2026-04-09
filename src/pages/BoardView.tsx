@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ export default function BoardView() {
       .eq("is_public", true)
       .single()
       .then(({ data }) => {
-        setBoard(data);
+        setBoard(data as unknown as Board | null);
         setLoading(false);
       });
   }, [id]);
@@ -57,7 +57,6 @@ export default function BoardView() {
           <p className="text-sm text-muted-foreground italic">"{board.prompt}"</p>
         </div>
 
-        {/* 9-tile grid */}
         <div className="grid grid-cols-3 gap-4">
           {board.images?.slice(0, 6).map((img, i) => (
             <div key={i} className="aspect-square bg-accent rounded-xl overflow-hidden">
@@ -71,7 +70,6 @@ export default function BoardView() {
             </div>
           ))}
 
-          {/* Palette */}
           <div className="bg-card rounded-xl border border-border p-4 space-y-2">
             <p className="text-xs text-muted-foreground font-medium">Palette</p>
             <div className="space-y-1.5">
@@ -84,7 +82,6 @@ export default function BoardView() {
             </div>
           </div>
 
-          {/* Fonts */}
           <div className="bg-card rounded-xl border border-border p-4 space-y-2">
             <p className="text-xs text-muted-foreground font-medium">Fonts</p>
             <div className="space-y-3">
@@ -99,7 +96,6 @@ export default function BoardView() {
             </div>
           </div>
 
-          {/* Keywords */}
           <div className="bg-card rounded-xl border border-border p-4 space-y-2">
             <p className="text-xs text-muted-foreground font-medium">Keywords</p>
             <div className="flex flex-wrap gap-1.5">

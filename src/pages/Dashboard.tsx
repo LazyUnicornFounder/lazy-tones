@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { Board, Profile } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, RefreshCw, Download, Share2, LogOut, Image as ImageIcon } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Download, Share2, LogOut, Image as ImageIcon, Sparkles } from "lucide-react";
 
 export default function Dashboard() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   const fetchProfile = async () => {
     const { data } = await supabase.from("profiles").select("*").eq("id", user!.id).single();
-    if (data) setProfile(data);
+    if (data) setProfile(data as unknown as Profile);
   };
 
   const fetchBoards = async () => {
@@ -40,8 +40,9 @@ export default function Dashboard() {
       .eq("user_id", user!.id)
       .order("created_at", { ascending: false });
     if (data) {
-      setBoards(data);
-      if (data.length > 0 && !activeBoard) setActiveBoard(data[0]);
+      const typed = data as unknown as Board[];
+      setBoards(typed);
+      if (typed.length > 0 && !activeBoard) setActiveBoard(typed[0]);
     }
   };
 
@@ -54,8 +55,9 @@ export default function Dashboard() {
       });
       if (error) throw error;
       if (data?.board) {
-        setActiveBoard(data.board);
-        setBoards((prev) => [data.board, ...prev]);
+        const board = data.board as Board;
+        setActiveBoard(board);
+        setBoards((prev) => [board, ...prev]);
         setProfile((prev) => prev ? { ...prev, credits_remaining: prev.credits_remaining - 1 } : prev);
         setPrompt("");
       }
@@ -74,8 +76,9 @@ export default function Dashboard() {
       });
       if (error) throw error;
       if (data?.board) {
-        setActiveBoard(data.board);
-        setBoards((prev) => prev.map((b) => (b.id === data.board.id ? data.board : b)));
+        const board = data.board as Board;
+        setActiveBoard(board);
+        setBoards((prev) => prev.map((b) => (b.id === board.id ? board : b)));
       }
     } catch (err) {
       console.error("Regeneration failed:", err);
@@ -164,9 +167,8 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* 9-tile grid: 6 images + palette + fonts + keywords */}
+              {/* 9-tile grid */}
               <div className="grid grid-cols-3 gap-4">
-                {/* Images */}
                 {activeBoard.images?.slice(0, 6).map((img, i) => (
                   <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
                     {img.url ? (
@@ -185,7 +187,6 @@ export default function Dashboard() {
                   </div>
                 ))}
 
-                {/* Fill empty image slots */}
                 {Array.from({ length: Math.max(0, 6 - (activeBoard.images?.length || 0)) }).map((_, i) => (
                   <div key={`empty-${i}`} className="aspect-square bg-accent rounded-xl flex items-center justify-center">
                     <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
@@ -244,13 +245,5 @@ export default function Dashboard() {
         </main>
       </div>
     </div>
-  );
-}
-
-function Sparkles(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
-    </svg>
   );
 }
