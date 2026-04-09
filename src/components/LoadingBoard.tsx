@@ -15,11 +15,11 @@ const STEPS = [
 ];
 
 const INSPIRATIONS = [
-  "\"Design is intelligence made visible.\" — Alina Wheeler",
-  "\"Color is a power which directly influences the soul.\" — Wassily Kandinsky",
-  "\"Less is more.\" — Ludwig Mies van der Rohe",
-  "\"Good design is obvious. Great design is transparent.\" — Joe Sparano",
-  "\"Typography is the craft of endowing human language with a durable visual form.\" — Robert Bringhurst",
+  { quote: "Design is intelligence made visible.", author: "Alina Wheeler" },
+  { quote: "Color is a power which directly influences the soul.", author: "Wassily Kandinsky" },
+  { quote: "Less is more.", author: "Ludwig Mies van der Rohe" },
+  { quote: "Good design is obvious. Great design is transparent.", author: "Joe Sparano" },
+  { quote: "Typography is the craft of endowing human language with a durable visual form.", author: "Robert Bringhurst" },
 ];
 
 interface LoadingBoardProps {
