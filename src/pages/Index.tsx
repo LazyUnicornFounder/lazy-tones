@@ -159,7 +159,7 @@ export default function Index() {
             </div>
             <button
               onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className={`text-sm text-muted-foreground hover:text-foreground transition-all duration-400 cursor-pointer ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}
             >
               Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
             </button>
