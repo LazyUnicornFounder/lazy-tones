@@ -6,7 +6,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SYSTEM = `You are a creative director. Given a vibe, return a mood board spec as JSON:
 {
-  "image_prompts": [3 detailed Flux 2 Pro prompts — hero shot, texture, scene],
+  "image_prompts": [6 detailed Flux 2 Pro prompts — hero shot, texture, scene, detail, atmosphere, lifestyle],
   "palette": [5 hex colors that match the vibe],
   "fonts": { "heading": "Google Font name", "body": "Google Font name" },
   "keywords": [8-12 descriptive single words]
@@ -127,17 +127,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate 3 images with guarded fallbacks
+    // Generate 6 images with guarded fallbacks
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
     const SHOT_FALLBACKS = [
       "hero editorial composition",
       "material texture close-up",
       "atmospheric interior or environment scene",
+      "detail macro shot",
+      "moody atmosphere establishing shot",
+      "lifestyle editorial moment",
     ];
     const promptCandidates = Array.isArray(spec.image_prompts)
       ? spec.image_prompts.filter((value: unknown): value is string => typeof value === "string" && value.trim().length > 0)
       : [];
-    const prompts = Array.from({ length: 3 }, (_, index) =>
+    const prompts = Array.from({ length: 6 }, (_, index) =>
       promptCandidates[index] || `${prompt}. ${SHOT_FALLBACKS[index]}`
     );
 

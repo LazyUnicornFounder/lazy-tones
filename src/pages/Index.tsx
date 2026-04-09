@@ -298,7 +298,7 @@ export default function Index() {
             </div>
 
             <div ref={boardRef} className="grid grid-cols-3 gap-4">
-              {activeBoard.images?.slice(0, 3).map((img, i) => (
+              {activeBoard.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
                   {regeneratingTile === i ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 skeleton-shimmer">
@@ -323,7 +323,7 @@ export default function Index() {
                 </div>
               ))}
 
-              {Array.from({ length: Math.max(0, 3 - (activeBoard.images?.length || 0)) }).map((_, i) => (
+              {Array.from({ length: Math.max(0, 6 - (activeBoard.images?.length || 0)) }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square bg-accent rounded-xl flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
                 </div>
