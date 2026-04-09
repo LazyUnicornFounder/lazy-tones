@@ -81,7 +81,7 @@ export default function ShowcaseTicker() {
         .select("id, prompt, images")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(50);
 
       if (!data || cancelled) return;
 
@@ -94,7 +94,7 @@ export default function ShowcaseTicker() {
       });
 
       const checked = await Promise.all(
-        rawImages.slice(0, 60).map(async (image) => ({
+        rawImages.slice(0, 100).map(async (image) => ({
           image,
           ok: await canLoadImage(image.url),
         }))
@@ -126,9 +126,9 @@ export default function ShowcaseTicker() {
 
       const spread = spreadByBoard(validImages);
 
-      const maxPerRow = 10;
+      const maxPerRow = 12;
       const nextRows: ShowcaseImage[][] = [];
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 5; i++) {
         const start = i * maxPerRow;
         const slice = spread.slice(start, start + maxPerRow);
         if (slice.length > 0) nextRows.push(slice);
