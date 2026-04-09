@@ -31,6 +31,14 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
+  const [ideaIndex, setIdeaIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
