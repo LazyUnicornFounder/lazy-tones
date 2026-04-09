@@ -15,11 +15,11 @@ const STEPS = [
 ];
 
 const INSPIRATIONS = [
-  "\"Design is intelligence made visible.\" — Alina Wheeler",
-  "\"Color is a power which directly influences the soul.\" — Wassily Kandinsky",
-  "\"Less is more.\" — Ludwig Mies van der Rohe",
-  "\"Good design is obvious. Great design is transparent.\" — Joe Sparano",
-  "\"Typography is the craft of endowing human language with a durable visual form.\" — Robert Bringhurst",
+  { quote: "Design is intelligence made visible.", author: "Alina Wheeler" },
+  { quote: "Color is a power which directly influences the soul.", author: "Wassily Kandinsky" },
+  { quote: "Less is more.", author: "Ludwig Mies van der Rohe" },
+  { quote: "Good design is obvious. Great design is transparent.", author: "Joe Sparano" },
+  { quote: "Typography is the craft of endowing human language with a durable visual form.", author: "Robert Bringhurst" },
 ];
 
 interface LoadingBoardProps {
@@ -75,11 +75,12 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
         {/* Inspirational quote */}
         <div className="text-center">
           <p
-            className={`text-xs text-muted-foreground/60 italic max-w-sm mx-auto transition-opacity duration-400 ${
+            className={`text-xs text-muted-foreground/60 italic max-w-lg mx-auto transition-opacity duration-400 ${
               quoteFading ? "opacity-0" : "opacity-100"
             }`}
           >
-            {INSPIRATIONS[quoteIndex]}
+            "{INSPIRATIONS[quoteIndex].quote}" <span className="hidden md:inline">— {INSPIRATIONS[quoteIndex].author}</span>
+            <span className="block md:hidden mt-0.5">— {INSPIRATIONS[quoteIndex].author}</span>
           </p>
         </div>
 
