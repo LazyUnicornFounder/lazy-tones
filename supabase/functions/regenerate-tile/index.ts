@@ -10,27 +10,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const { board_id, tile_index, tweak_prompt } = await req.json();
     if (!board_id || tile_index === undefined || tile_index < 0 || tile_index > 5) {
@@ -40,12 +23,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get the board
+    // Get the board (no user check — works for anonymous boards too)
     const { data: board, error: fetchError } = await supabase
       .from("boards")
       .select("*")
       .eq("id", board_id)
-      .eq("user_id", user.id)
       .single();
 
     if (fetchError || !board) {
@@ -66,7 +48,7 @@ Deno.serve(async (req) => {
     const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${replicateToken}`,
+        Authorization: `Token ${replicateToken}`,
         "Content-Type": "application/json",
         Prefer: "wait",
       },
@@ -75,11 +57,30 @@ Deno.serve(async (req) => {
       }),
     });
 
-    const result = await resp.json();
-    images[tile_index] = {
-      url: result.output?.[0] || result.output || "",
-      sub_prompt: imagePrompt,
-    };
+    // Handle rate limiting
+    if (resp.status === 429) {
+      const retryAfter = parseInt(resp.headers.get("retry-after") || "12", 10);
+      await resp.text();
+      await new Promise((r) => setTimeout(r, retryAfter * 1000));
+      const retry = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${replicateToken}`,
+          "Content-Type": "application/json",
+          Prefer: "wait",
+        },
+        body: JSON.stringify({
+          input: { prompt: imagePrompt, aspect_ratio: "1:1" },
+        }),
+      });
+      const r = await retry.json();
+      const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
+      images[tile_index] = { url, sub_prompt: imagePrompt };
+    } else {
+      const result = await resp.json();
+      const url = typeof result.output === "string" ? result.output : (Array.isArray(result.output) ? result.output[0] : "") || "";
+      images[tile_index] = { url, sub_prompt: imagePrompt };
+    }
 
     // Update board
     const { data: updatedBoard, error: updateError } = await supabase
