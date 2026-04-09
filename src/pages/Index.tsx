@@ -185,7 +185,7 @@ export default function Index() {
             </Button>
           ) : (
             <Button size="sm" className="rounded-xl" onClick={() => navigate("/auth")}>
-              Sign Up
+              Sign Up Free
             </Button>
           )}
         </div>
