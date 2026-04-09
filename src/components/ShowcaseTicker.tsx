@@ -21,14 +21,24 @@ function normalizeImages(value: unknown): Array<{ url?: string }> {
   return [];
 }
 
+function canLoadImage(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.referrerPolicy = "no-referrer";
+    img.src = url;
+  });
+}
+
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
   const items = images.length > 0 ? [...images, ...images] : [];
   const duration = Math.max(28, images.length * 2.5);
 
   return (
     <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 h-full w-16 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 h-full w-16 bg-gradient-to-l from-background to-transparent" />
       <div
         className={`flex w-max gap-3 will-change-transform ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
         style={{ animationDuration: `${duration}s` }}
@@ -43,10 +53,13 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
             <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
               <img
                 src={img.url}
-                alt={img.prompt}
+                alt=""
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 decoding="async"
                 referrerPolicy="no-referrer"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
               />
             </div>
           </a>
@@ -72,7 +85,7 @@ export default function ShowcaseTicker() {
 
       if (!data || cancelled) return;
 
-      const allImages: ShowcaseImage[] = data.flatMap((board) => {
+      const rawImages: ShowcaseImage[] = data.flatMap((board) => {
         const images = normalizeImages(board.images);
         return images
           .map((img) => (typeof img?.url === "string" ? img.url.trim() : ""))
@@ -80,16 +93,26 @@ export default function ShowcaseTicker() {
           .map((url) => ({ url, boardId: board.id, prompt: board.prompt }));
       });
 
-      if (allImages.length === 0) {
+      const checked = await Promise.all(
+        rawImages.slice(0, 60).map(async (image) => ({
+          image,
+          ok: await canLoadImage(image.url),
+        }))
+      );
+
+      if (cancelled) return;
+
+      const validImages = checked.filter((entry) => entry.ok).map((entry) => entry.image);
+      if (validImages.length === 0) {
         setRows([]);
         return;
       }
 
-      const maxPerRow = 14;
+      const maxPerRow = 10;
       const nextRows: ShowcaseImage[][] = [];
       for (let i = 0; i < 3; i++) {
         const start = i * maxPerRow;
-        const slice = allImages.slice(start, start + maxPerRow);
+        const slice = validImages.slice(start, start + maxPerRow);
         if (slice.length > 0) nextRows.push(slice);
       }
 
@@ -105,7 +128,7 @@ export default function ShowcaseTicker() {
   if (rows.length === 0) return null;
 
   return (
-    <section className="overflow-hidden py-12 space-y-3">
+    <section className="space-y-3 overflow-hidden py-12">
       <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
         Recent boards from the community
       </p>
@@ -115,3 +138,4 @@ export default function ShowcaseTicker() {
     </section>
   );
 }
+
