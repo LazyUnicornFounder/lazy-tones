@@ -174,6 +174,15 @@ export default function Dashboard() {
 
         {/* Board view */}
         <main className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="max-w-4xl mx-auto mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-destructive">Generation failed</p>
+                <p className="text-xs text-muted-foreground mt-1">{error}</p>
+              </div>
+            </div>
+          )}
           {activeBoard ? (
             <div className="max-w-4xl mx-auto space-y-6">
               {/* Toolbar */}
