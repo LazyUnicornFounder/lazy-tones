@@ -20,14 +20,14 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
-  const [ideaIndex, setIdeaIndex] = useState(() => Math.floor(Math.random() * PROMPT_IDEAS.length));
+  const [ideaIndex, setIdeaIndex] = useState(() => Math.floor(Math.random() * promptIdeas.length));
   const [ideaVisible, setIdeaVisible] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setIdeaVisible(false);
       setTimeout(() => {
-        setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+        setIdeaIndex((prev) => (prev + 1) % promptIdeas.length);
         setIdeaVisible(true);
       }, 700);
     }, 4000);
@@ -195,7 +195,7 @@ export default function Index() {
                 onClick={() => {
                   setIdeaVisible(false);
                   setTimeout(() => {
-                    setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+                    setIdeaIndex((prev) => (prev + 1) % promptIdeas.length);
                     setIdeaVisible(true);
                   }, 300);
                 }}
@@ -204,10 +204,10 @@ export default function Index() {
                 <RefreshCw className="h-3 w-3" />
               </button>
               <button
-                onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
+                onClick={() => setPrompt(promptIdeas[ideaIndex])}
                 className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
+                Try: <span className="italic">{promptIdeas[ideaIndex]}</span>
               </button>
             </div>
             {error && (
