@@ -181,101 +181,19 @@ Deno.serve(async (req) => {
       }
     }
 
-    async function generateImage(originalPrompt: string, index: number, maxRetries = 5): Promise<{ url: string; sub_prompt: string }> {
-      let prompt = originalPrompt;
-
-      if (!replicateToken) {
-        const gatewayImage = await generateGatewayImage(prompt);
-        return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
-      }
-
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        try {
-          const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
-            method: "POST",
-            headers: {
-              Authorization: `Token ${replicateToken}`,
-              "Content-Type": "application/json",
-              Prefer: "wait",
-            },
-            body: JSON.stringify({
-              input: { prompt, aspect_ratio: "1:1" },
-            }),
-          });
-
-          if (resp.status === 429) {
-            const retryAfter = parseInt(resp.headers.get("retry-after") || "5", 10);
-            console.log(`Rate limited on tile ${index} (attempt ${attempt + 1}), waiting ${retryAfter}s`);
-            await resp.text();
-            await new Promise((r) => setTimeout(r, retryAfter * 1000));
-            continue;
-          }
-
-          const responseText = await resp.text();
-          let result: any = {};
-
-          try {
-            result = responseText ? JSON.parse(responseText) : {};
-          } catch {
-            console.error("Replicate parse error tile", index, responseText);
-          }
-
-          const message = typeof result?.error === "string"
-            ? result.error
-            : !resp.ok
-              ? responseText || `HTTP ${resp.status}`
-              : "";
-
-          if (message) {
-            console.error("Replicate error tile", index, message);
-            const lowered = message.toLowerCase();
-            if (lowered.includes("flagged") || lowered.includes("sensitive")) {
-              prompt = `Abstract editorial photograph inspired by ${originalPrompt.replace(/[^a-zA-Z0-9 ,]/g, " ").trim()}`;
-              console.log(`Softened prompt for tile ${index}: ${prompt}`);
-              const gatewayImage = await generateGatewayImage(prompt);
-              if (gatewayImage) {
-                return { url: gatewayImage.trim(), sub_prompt: originalPrompt };
-              }
-            }
-            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-            continue;
-          }
-
-          const url = typeof result.output === "string"
-            ? result.output.trim()
-            : (Array.isArray(result.output) ? String(result.output[0] || "").trim() : "");
-
-          if (url) {
-            return { url, sub_prompt: originalPrompt };
-          }
-        } catch (e) {
-          console.error("Image gen failed for tile", index, "attempt", attempt + 1, e);
-        }
-
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-      }
-
-      const gatewayImage = await generateGatewayImage(prompt);
+    async function generateImage(originalPrompt: string, index: number): Promise<{ url: string; sub_prompt: string }> {
+      const gatewayImage = await generateGatewayImage(originalPrompt);
       return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
     }
 
     const images: { url: string; sub_prompt: string }[] = [];
-    for (let start = 0; start < prompts.length; start += 2) {
-      const batch = prompts.slice(start, start + 2);
-      const batchImages = await Promise.all(
-        batch.map((imagePrompt, offset) => generateImage(imagePrompt, start + offset))
-      );
-
-      images.push(
-        ...batchImages.map((image, offset) => ({
-          url: image.url.trim() || createFallbackImage(),
-          sub_prompt: image.sub_prompt.trim() || batch[offset],
-        }))
-      );
-
-      if (start + 2 < prompts.length) {
-        await new Promise((r) => setTimeout(r, 1200));
-      }
+    for (const imagePrompt of prompts) {
+      const image = await generateImage(imagePrompt, images.length);
+      images.push({
+        url: image.url.trim() || createFallbackImage(),
+        sub_prompt: image.sub_prompt.trim() || imagePrompt,
+      });
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     // Save board (user_id is null for anonymous users)
