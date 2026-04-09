@@ -14,6 +14,7 @@ export default function Index() {
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [regeneratingTile, setRegeneratingTile] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
@@ -45,7 +46,8 @@ export default function Index() {
   }, [prompt, generating]);
 
   const handleRegenerateTile = async (tileIndex: number) => {
-    if (!activeBoard) return;
+    if (!activeBoard || regeneratingTile !== null) return;
+    setRegeneratingTile(tileIndex);
     try {
       const { data, error } = await supabase.functions.invoke("regenerate-tile", {
         body: { board_id: activeBoard.id, tile_index: tileIndex },
@@ -56,6 +58,9 @@ export default function Index() {
       }
     } catch (err) {
       console.error("Regeneration failed:", err);
+      toast.error("Regeneration failed. Try again.");
+    } finally {
+      setRegeneratingTile(null);
     }
   };
 
@@ -167,19 +172,26 @@ export default function Index() {
             <div ref={boardRef} className="grid grid-cols-3 gap-4">
               {activeBoard.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
-                  {img.url ? (
+                  {regeneratingTile === i ? (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 skeleton-shimmer">
+                      <Loader2 className="h-6 w-6 text-primary animate-spin" />
+                      <span className="text-xs text-muted-foreground">Regenerating…</span>
+                    </div>
+                  ) : img.url ? (
                     <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
                     </div>
                   )}
-                  <button
-                    onClick={() => handleRegenerateTile(i)}
-                    className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-                  >
-                    <RefreshCw className="h-5 w-5 text-primary-foreground" />
-                  </button>
+                  {regeneratingTile !== i && (
+                    <button
+                      onClick={() => handleRegenerateTile(i)}
+                      className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    >
+                      <RefreshCw className="h-5 w-5 text-primary-foreground" />
+                    </button>
+                  )}
                 </div>
               ))}
 
