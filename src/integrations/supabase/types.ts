@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      boards: {
+        Row: {
+          created_at: string | null
+          fonts: Json | null
+          id: string
+          images: Json | null
+          is_public: boolean | null
+          keywords: Json | null
+          palette: Json | null
+          prompt: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          fonts?: Json | null
+          id?: string
+          images?: Json | null
+          is_public?: boolean | null
+          keywords?: Json | null
+          palette?: Json | null
+          prompt: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          fonts?: Json | null
+          id?: string
+          images?: Json | null
+          is_public?: boolean | null
+          keywords?: Json | null
+          palette?: Json | null
+          prompt?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          credits_remaining: number | null
+          email: string
+          id: string
+          plan: string | null
+          polar_customer_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_remaining?: number | null
+          email: string
+          id: string
+          plan?: string | null
+          polar_customer_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_remaining?: number | null
+          email?: string
+          id?: string
+          plan?: string | null
+          polar_customer_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
