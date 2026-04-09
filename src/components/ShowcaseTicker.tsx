@@ -33,7 +33,7 @@ function canLoadImage(url: string): Promise<boolean> {
 
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
   const items = images.length > 0 ? [...images, ...images] : [];
-  const duration = Math.max(28, images.length * 2.5);
+  const duration = Math.max(60, images.length * 6);
 
   return (
     <div className="relative overflow-hidden">
