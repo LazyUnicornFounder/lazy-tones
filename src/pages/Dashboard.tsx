@@ -17,9 +17,17 @@ export default function Dashboard() {
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [autoTriggered, setAutoTriggered] = useState(false);
 
   // No auth redirect — allow anonymous board generation
 
+  // Auto-generate if arriving with prompt from landing page
+  useEffect(() => {
+    if (prompt && !autoTriggered && !generating && !authLoading) {
+      setAutoTriggered(true);
+      handleGenerate();
+    }
+  }, [authLoading]);
   useEffect(() => {
     if (user) {
       fetchProfile();
