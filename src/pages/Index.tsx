@@ -46,6 +46,35 @@ export default function Index() {
     fetchCredits();
   }, [user, activeBoard]);
 
+  // Auto-generate from pending prompt after auth
+  useEffect(() => {
+    if (!user || authLoading || generating) return;
+    const pending = localStorage.getItem("pending_prompt");
+    if (pending) {
+      localStorage.removeItem("pending_prompt");
+      setPrompt(pending);
+      // Trigger generation on next tick after state is set
+      setTimeout(() => {
+        setPrompt((p) => {
+          if (p) {
+            setGenerating(true);
+            setSubmittedPrompt(p);
+            setError(null);
+            supabase.functions.invoke("generate-board", { body: { prompt: p } }).then(({ data, error: fnError }) => {
+              if (fnError || data?.error) {
+                setError(data?.error || fnError?.message || "Generation failed.");
+              } else if (data?.board) {
+                setActiveBoard(data.board as Board);
+              }
+              setGenerating(false);
+            });
+          }
+          return p;
+        });
+      }, 100);
+    }
+  }, [user, authLoading]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setIdeaVisible(false);
@@ -60,6 +89,7 @@ export default function Index() {
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
     if (!user) {
+      localStorage.setItem("pending_prompt", prompt);
       navigate("/auth");
       return;
     }
