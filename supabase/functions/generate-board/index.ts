@@ -3,9 +3,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
-
-const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
 
 const SYSTEM = `You are a creative director. Given a vibe, return a mood board spec as JSON:
 {
@@ -60,19 +57,57 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get creative direction from Claude
+    // Get creative direction from Lovable AI Gateway
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: "AI service not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let aiResp;
     try {
-      aiResp = await anthropic.messages.create({
-        model: "claude-haiku-4-5-20250512",
-        max_tokens: 2000,
-        system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: `Vibe: ${prompt}` }],
+      const gatewayResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user", content: `Vibe: ${prompt}` },
+          ],
+        }),
       });
+
+      if (!gatewayResp.ok) {
+        const errText = await gatewayResp.text();
+        console.error("AI Gateway error:", gatewayResp.status, errText);
+        if (gatewayResp.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limited, please try again shortly." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (gatewayResp.status === 402) {
+          return new Response(JSON.stringify({ error: "AI credits exhausted. Please add funds in Settings." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        return new Response(JSON.stringify({ error: "AI service unavailable" }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      aiResp = await gatewayResp.json();
     } catch (aiError: any) {
-      console.error("Anthropic API error:", aiError?.message || aiError);
-      const msg = aiError?.error?.error?.message || aiError?.message || "AI service unavailable";
-      return new Response(JSON.stringify({ error: msg }), {
+      console.error("AI Gateway error:", aiError?.message || aiError);
+      return new Response(JSON.stringify({ error: "AI service unavailable" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -80,8 +115,12 @@ Deno.serve(async (req) => {
 
     let spec;
     try {
-      spec = JSON.parse(aiResp.content[0].text);
+      const rawText = aiResp.choices?.[0]?.message?.content || "";
+      // Strip markdown fences if present
+      const cleaned = rawText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+      spec = JSON.parse(cleaned);
     } catch {
+      console.error("Failed to parse AI response:", aiResp.choices?.[0]?.message?.content);
       return new Response(JSON.stringify({ error: "Failed to parse AI response" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
