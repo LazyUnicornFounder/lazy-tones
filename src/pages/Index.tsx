@@ -114,7 +114,7 @@ export default function Index() {
             <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
               Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
             </p>
-            <div className="flex gap-3 max-w-xl mx-auto mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mt-8">
               <Input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
@@ -125,7 +125,7 @@ export default function Index() {
               <Button
                 onClick={handleGenerate}
                 disabled={!prompt || generating}
-                className="h-12 px-6 rounded-xl"
+                className="h-12 px-6 rounded-xl w-full sm:w-auto"
               >
                 <ArrowRight className="ml-1 h-4 w-4" />
                 Generate Board
