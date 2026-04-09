@@ -342,9 +342,8 @@ export default function Index() {
       {activeBoard && (
         <div aria-hidden="true" style={{ position: "fixed", left: -3000, top: 0, pointerEvents: "none" }}>
           <div ref={exportRef} style={{ padding: 64, backgroundColor: "#f5f4ed", width: 960, boxSizing: "border-box" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-              <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>Lazy Tones</span>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazytones.lovable.app</span>
+            <div style={{ marginBottom: 32 }}>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>LazyTones.com</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
               {activeBoard.images?.slice(0, 3).map((img, i) => (
@@ -380,9 +379,6 @@ export default function Index() {
                   ))}
                 </div>
               </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-              <span style={{ fontSize: 12, color: "#5e5d59", fontFamily: "Inter, sans-serif" }}>lazytones.lovable.app</span>
             </div>
           </div>
         </div>
