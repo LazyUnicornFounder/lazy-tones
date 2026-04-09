@@ -14,14 +14,14 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-center px-6 py-4 max-w-6xl mx-auto">
+      <nav className="flex items-center justify-center px-6 py-4">
         <Link to="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</Link>
       </nav>
 
       {/* Hero */}
-      <section className="py-24 px-6">
+      <section className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
             Mood boards in 30 seconds
@@ -49,7 +49,7 @@ export default function Index() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 border-t border-border">
+      <footer className="py-6 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
           <span className="font-serif text-foreground">LazyMood</span>
           <span>© {new Date().getFullYear()} LazyMood. All rights reserved.</span>
