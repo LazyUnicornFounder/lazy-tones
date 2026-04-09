@@ -174,7 +174,7 @@ export default function Index() {
       <nav className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <span className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</span>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 rounded-md font-normal">beta</Badge>
+          <Badge className="text-[10px] px-1.5 py-0 rounded-md font-normal bg-primary text-primary-foreground">beta</Badge>
         </div>
         <div className="flex items-center gap-3">
           {user && creditsRemaining !== null && (
