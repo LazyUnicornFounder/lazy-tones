@@ -14,6 +14,8 @@ import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, A
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const promptIdeas = useMemo(() => getDailyPromptIdeas(), []);
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
@@ -25,6 +27,24 @@ export default function Index() {
   const boardRef = useRef<HTMLDivElement>(null);
   const [ideaIndex, setIdeaIndex] = useState(() => Math.floor(Math.random() * promptIdeas.length));
   const [ideaVisible, setIdeaVisible] = useState(true);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+
+  // Fetch credits when user is signed in
+  useEffect(() => {
+    if (!user) {
+      setCreditsRemaining(null);
+      return;
+    }
+    const fetchCredits = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", user.id)
+        .single();
+      if (data) setCreditsRemaining(data.credits_remaining);
+    };
+    fetchCredits();
+  }, [user, activeBoard]);
 
   useEffect(() => {
     const interval = setInterval(() => {
