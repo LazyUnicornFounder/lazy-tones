@@ -101,14 +101,19 @@ export default function Index() {
     }
   };
 
+  const exportRef = useRef<HTMLDivElement>(null);
+
   const handleExport = async () => {
-    if (!boardRef.current || exporting) return;
+    if (!exportRef.current || exporting) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(boardRef.current, {
+      // Temporarily show the export wrapper
+      exportRef.current.style.display = "block";
+      const dataUrl = await toPng(exportRef.current, {
         backgroundColor: "#f5f4ed",
         pixelRatio: 2,
       });
+      exportRef.current.style.display = "none";
       const link = document.createElement("a");
       link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
       link.href = dataUrl;
