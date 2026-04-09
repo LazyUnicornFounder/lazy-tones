@@ -40,8 +40,8 @@ export default function Index() {
       setTimeout(() => {
         setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
         setIdeaVisible(true);
-      }, 400);
-    }, 3000);
+      }, 700);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -144,7 +144,7 @@ export default function Index() {
               <Input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Try: earthy wedding, terracotta + cream, rustic Italian"
+                placeholder="Describe a vibe…"
                 className="h-12 text-base rounded-xl bg-card border-border"
                 onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
               />
@@ -159,7 +159,7 @@ export default function Index() {
             </div>
             <button
               onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
-              className={`text-sm text-muted-foreground hover:text-foreground transition-all duration-400 cursor-pointer ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}
+              className={`text-sm text-muted-foreground hover:text-foreground cursor-pointer transition-opacity duration-700 ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}
             >
               Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
             </button>
