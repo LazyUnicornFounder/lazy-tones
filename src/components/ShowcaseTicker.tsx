@@ -55,7 +55,7 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
                 src={img.url}
                 alt=""
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                decoding="async"
+                loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const link = e.currentTarget.closest("a");
@@ -82,7 +82,7 @@ export default function ShowcaseTicker() {
         .select("id, prompt, images")
         .eq("is_public", true)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(30);
 
       if (!data || cancelled) return;
 
