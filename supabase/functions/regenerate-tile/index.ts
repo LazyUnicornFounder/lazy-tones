@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     // Regenerate via Replicate
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
-    const resp = await fetch("https://api.replicate.com/v1/predictions", {
+    const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${replicateToken}`,
@@ -71,7 +71,6 @@ Deno.serve(async (req) => {
         Prefer: "wait",
       },
       body: JSON.stringify({
-        version: "black-forest-labs/flux-2-pro",
         input: { prompt: imagePrompt, aspect_ratio: "1:1" },
       }),
     });
