@@ -56,6 +56,22 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
   return (
     <div className="flex-1 flex items-center justify-center px-6">
       <div className="max-w-4xl w-full mx-auto space-y-10">
+        {/* Progress section — at the top */}
+        <div className="max-w-md mx-auto space-y-4">
+          <div className="h-1.5 bg-accent rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary/60 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <span className="text-base animate-bounce" style={{ animationDuration: "1.5s" }}>
+              {STEPS[stepIndex].icon}
+            </span>
+            <span className="transition-all duration-300">{STEPS[stepIndex].label}</span>
+          </div>
+        </div>
+
         {/* Prompt echo */}
         <div className="text-center space-y-2">
           <p className="text-sm text-muted-foreground">Creating mood board for</p>
@@ -130,25 +146,6 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
                 />
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* Progress section */}
-        <div className="max-w-md mx-auto space-y-4">
-          {/* Progress bar */}
-          <div className="h-1.5 bg-accent rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary/60 rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-
-          {/* Current step */}
-          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <span className="text-base animate-bounce" style={{ animationDuration: "1.5s" }}>
-              {STEPS[stepIndex].icon}
-            </span>
-            <span className="transition-all duration-300">{STEPS[stepIndex].label}</span>
           </div>
         </div>
 
