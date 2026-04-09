@@ -164,7 +164,7 @@ export default function Index() {
             </div>
 
             {/* 9-tile grid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div ref={boardRef} className="grid grid-cols-3 gap-4">
               {activeBoard.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
                   {img.url ? (
