@@ -129,25 +129,54 @@ Deno.serve(async (req) => {
 
     // Generate 6 images in parallel via Replicate
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
-    const imagePromises = spec.image_prompts.slice(0, 6).map((p: string) =>
-      fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${replicateToken}`,
-          "Content-Type": "application/json",
-          Prefer: "wait",
-        },
-        body: JSON.stringify({
-          input: { prompt: p, aspect_ratio: "1:1" },
-        }),
-      }).then((r) => r.json())
-    );
+    const prompts = spec.image_prompts.slice(0, 6);
+    const images: { url: string; sub_prompt: string }[] = [];
 
-    const imageResults = await Promise.all(imagePromises);
-    const images = imageResults.map((r: any, i: number) => ({
-      url: r.output?.[0] || r.output || "",
-      sub_prompt: spec.image_prompts[i],
-    }));
+    for (let i = 0; i < prompts.length; i++) {
+      try {
+        const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
+          method: "POST",
+          headers: {
+            Authorization: `Token ${replicateToken}`,
+            "Content-Type": "application/json",
+            Prefer: "wait",
+          },
+          body: JSON.stringify({
+            input: { prompt: prompts[i], aspect_ratio: "1:1" },
+          }),
+        });
+
+        // If rate limited, wait and retry once
+        if (resp.status === 429) {
+          const retryAfter = parseInt(resp.headers.get("retry-after") || "12", 10);
+          console.log(`Rate limited on tile ${i}, waiting ${retryAfter}s`);
+          await resp.text(); // consume body
+          await new Promise((r) => setTimeout(r, retryAfter * 1000));
+          const retry = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
+            method: "POST",
+            headers: {
+              Authorization: `Token ${replicateToken}`,
+              "Content-Type": "application/json",
+              Prefer: "wait",
+            },
+            body: JSON.stringify({
+              input: { prompt: prompts[i], aspect_ratio: "1:1" },
+            }),
+          });
+          const r = await retry.json();
+          const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
+          images.push({ url, sub_prompt: prompts[i] });
+        } else {
+          const r = await resp.json();
+          const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
+          if (r.error) console.error("Replicate error tile", i, r.error);
+          images.push({ url, sub_prompt: prompts[i] });
+        }
+      } catch (e) {
+        console.error("Image gen failed for tile", i, e);
+        images.push({ url: "", sub_prompt: prompts[i] });
+      }
+    }
 
     // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
