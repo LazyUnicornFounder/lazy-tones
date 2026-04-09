@@ -1,52 +1,204 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
 
 export default function Index() {
   const [prompt, setPrompt] = useState("");
-  const { user } = useAuth();
+  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerate = () => {
-    window.location.href = `/app?prompt=${encodeURIComponent(prompt)}`;
+  const handleGenerate = useCallback(async () => {
+    if (!prompt || generating) return;
+    setGenerating(true);
+    setError(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
+        body: { prompt },
+      });
+      if (fnError) throw fnError;
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
+      if (data?.board) {
+        setActiveBoard(data.board as Board);
+        setPrompt("");
+      }
+    } catch (err: any) {
+      console.error("Generation failed:", err);
+      setError(err?.message || "Generation failed. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  }, [prompt, generating]);
+
+  const handleRegenerateTile = async (tileIndex: number) => {
+    if (!activeBoard) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("regenerate-tile", {
+        body: { board_id: activeBoard.id, tile_index: tileIndex },
+      });
+      if (error) throw error;
+      if (data?.board) {
+        setActiveBoard(data.board as Board);
+      }
+    } catch (err) {
+      console.error("Regeneration failed:", err);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!activeBoard) return;
+    const url = `${window.location.origin}/board/${activeBoard.id}`;
+    await navigator.clipboard.writeText(url);
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="flex items-center justify-center px-6 py-4">
-        <Link to="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</Link>
+        <span className="font-serif text-xl tracking-tight text-foreground">LazyMood</span>
       </nav>
 
-      {/* Hero */}
-      <section className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-3xl mx-auto text-center space-y-6">
-          <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
-            Mood boards in 30 seconds
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
-            Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
-          </p>
-          <div className="flex gap-3 max-w-xl mx-auto mt-8">
-            <Input
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Try: earthy wedding, terracotta + cream, rustic Italian"
-              className="h-12 text-base rounded-xl bg-card border-border"
-              onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
-            />
-            <Button
-              onClick={handleGenerate}
-              disabled={!prompt}
-              className="h-12 px-6 rounded-xl"
-            >
-              Generate Board <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
+      {/* Main content */}
+      {!activeBoard ? (
+        /* Hero — prompt entry */
+        <section className="flex-1 flex items-center justify-center px-6">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
+              Mood boards in 30 seconds
+            </h1>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+              Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
+            </p>
+            <div className="flex gap-3 max-w-xl mx-auto mt-8">
+              <Input
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder="Try: earthy wedding, terracotta + cream, rustic Italian"
+                className="h-12 text-base rounded-xl bg-card border-border"
+                onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
+              />
+              <Button
+                onClick={handleGenerate}
+                disabled={!prompt || generating}
+                className="h-12 px-6 rounded-xl"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                )}
+                {generating ? "Generating…" : "Generate Board"}
+              </Button>
+            </div>
+            {error && (
+              <div className="max-w-xl mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-left">
+                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+            )}
           </div>
-        </div>
-      </section>
+        </section>
+      ) : (
+        /* Board result */
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {/* Toolbar */}
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground italic">"{activeBoard.prompt}"</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => setActiveBoard(null)}
+                >
+                  New Board
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={handleShare}>
+                  <Share2 className="h-3.5 w-3.5 mr-1" /> Share
+                </Button>
+                <Button variant="outline" size="sm" className="rounded-xl">
+                  <Download className="h-3.5 w-3.5 mr-1" /> Export
+                </Button>
+              </div>
+            </div>
+
+            {/* 9-tile grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {activeBoard.images?.slice(0, 6).map((img, i) => (
+                <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
+                  {img.url ? (
+                    <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleRegenerateTile(i)}
+                    className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                  >
+                    <RefreshCw className="h-5 w-5 text-primary-foreground" />
+                  </button>
+                </div>
+              ))}
+
+              {Array.from({ length: Math.max(0, 6 - (activeBoard.images?.length || 0)) }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square bg-accent rounded-xl flex items-center justify-center">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+              ))}
+
+              {/* Palette tile */}
+              <div className="bg-card rounded-xl border border-border p-4 space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Palette</p>
+                <div className="space-y-1.5">
+                  {activeBoard.palette?.map((color, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md" style={{ backgroundColor: color }} />
+                      <span className="text-xs text-muted-foreground font-mono">{color}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Fonts tile */}
+              <div className="bg-card rounded-xl border border-border p-4 space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Fonts</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Heading</p>
+                    <p className="text-lg font-serif text-foreground">{activeBoard.fonts?.heading}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Body</p>
+                    <p className="text-sm text-foreground">{activeBoard.fonts?.body}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Keywords tile */}
+              <div className="bg-card rounded-xl border border-border p-4 space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Keywords</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {activeBoard.keywords?.map((kw) => (
+                    <Badge key={kw} variant="secondary" className="text-xs font-normal rounded-md">
+                      {kw}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      )}
 
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-border">
