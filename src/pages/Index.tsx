@@ -234,7 +234,9 @@ export default function Index() {
                 Mood boards in 60 seconds
               </h1>
               <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-                Describe a vibe. Get images, palette, fonts, keywords. Share and export anywhere.
+                Describe a vibe. Get images, palette, fonts, keywords.
+                <br />
+                Share and export anywhere.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mt-8">
                 <Input
