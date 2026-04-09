@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,19 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
 
+const PROMPT_IDEAS = [
+  "earthy wedding, terracotta + cream, rustic Italian",
+  "90s nostalgia, neon lights, VHS aesthetic",
+  "Scandinavian minimalism, light wood, soft neutrals",
+  "tropical maximalism, bold prints, palm leaves",
+  "dark academia, leather-bound books, candlelight",
+  "coastal grandmother, linen, driftwood, sea glass",
+  "Y2K futurism, chrome, iridescent, bubblegum pink",
+  "Japanese wabi-sabi, imperfect ceramics, moss",
+  "art deco glamour, gold leaf, emerald green",
+  "cottagecore, wildflowers, handmade quilts, honey",
+];
+
 export default function Index() {
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
@@ -18,6 +31,14 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
+  const [ideaIndex, setIdeaIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
@@ -131,6 +152,12 @@ export default function Index() {
                 Generate Board
               </Button>
             </div>
+            <button
+              onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
+            </button>
             {error && (
               <div className="max-w-xl mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-left">
                 <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
