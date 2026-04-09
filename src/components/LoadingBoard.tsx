@@ -56,7 +56,7 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
   return (
     <div className="flex-1 flex items-center justify-center px-6">
       <div className="max-w-4xl w-full mx-auto space-y-10">
-        {/* Progress section — at the top */}
+        {/* Progress section */}
         <div className="max-w-md mx-auto space-y-4">
           <div className="h-1.5 bg-accent rounded-full overflow-hidden">
             <div
@@ -70,6 +70,17 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
             </span>
             <span className="transition-all duration-300">{STEPS[stepIndex].label}</span>
           </div>
+        </div>
+
+        {/* Inspirational quote */}
+        <div className="text-center">
+          <p
+            className={`text-xs text-muted-foreground/60 italic max-w-sm mx-auto transition-opacity duration-400 ${
+              quoteFading ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            {INSPIRATIONS[quoteIndex]}
+          </p>
         </div>
 
         {/* Prompt echo */}
@@ -147,17 +158,6 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Inspirational quote */}
-        <div className="text-center">
-          <p
-            className={`text-xs text-muted-foreground/60 italic max-w-sm mx-auto transition-opacity duration-400 ${
-              quoteFading ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            {INSPIRATIONS[quoteIndex]}
-          </p>
         </div>
       </div>
     </div>
