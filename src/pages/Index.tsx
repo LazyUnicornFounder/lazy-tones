@@ -4,10 +4,12 @@ import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import LoadingBoard from "@/components/LoadingBoard";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
 
 export default function Index() {
   const [prompt, setPrompt] = useState("");
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +17,7 @@ export default function Index() {
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
     setGenerating(true);
+    setSubmittedPrompt(prompt);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
@@ -66,7 +69,7 @@ export default function Index() {
       </nav>
 
       {/* Main content */}
-      {!activeBoard ? (
+      {!activeBoard && !generating ? (
         /* Hero — prompt entry */
         <section className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-3xl mx-auto text-center space-y-6">
@@ -89,12 +92,8 @@ export default function Index() {
                 disabled={!prompt || generating}
                 className="h-12 px-6 rounded-xl"
               >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : (
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                )}
-                {generating ? "Generating…" : "Generate Board"}
+                <ArrowRight className="ml-1 h-4 w-4" />
+                Generate Board
               </Button>
             </div>
             {error && (
@@ -105,6 +104,9 @@ export default function Index() {
             )}
           </div>
         </section>
+      ) : generating ? (
+        /* Loading experience */
+        <LoadingBoard prompt={submittedPrompt} />
       ) : (
         /* Board result */
         <main className="flex-1 overflow-y-auto p-6">
