@@ -1,6 +1,6 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -186,15 +186,15 @@ Deno.serve(async (req) => {
       return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
     }
 
-    const images: { url: string; sub_prompt: string }[] = [];
-    for (const imagePrompt of prompts) {
-      const image = await generateImage(imagePrompt, images.length);
-      images.push({
-        url: image.url.trim() || createFallbackImage(),
-        sub_prompt: image.sub_prompt.trim() || imagePrompt,
-      });
-      await new Promise((r) => setTimeout(r, 1000));
-    }
+    const images = await Promise.all(
+      prompts.map(async (imagePrompt, index) => {
+        const image = await generateImage(imagePrompt, index);
+        return {
+          url: image.url.trim() || createFallbackImage(),
+          sub_prompt: image.sub_prompt.trim() || imagePrompt,
+        };
+      })
+    );
 
     // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
