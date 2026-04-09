@@ -60,7 +60,7 @@ export default function BoardView() {
         <div className="grid grid-cols-3 gap-4">
           {board.images?.slice(0, 6).map((img, i) => (
             <div key={i} className="aspect-square bg-accent rounded-xl overflow-hidden">
-              {img.url ? (
+              {img.url && !img.url.startsWith("data:image/svg+xml") ? (
                 <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
