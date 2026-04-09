@@ -59,14 +59,22 @@ export default function ShowcaseTicker() {
       // Extract all valid images (skip data URIs and empty URLs)
       const allImages: ShowcaseImage[] = [];
       for (const board of data) {
-        const imgs = board.images as any[];
+        let imgs = board.images;
         if (!imgs) continue;
+        // Handle case where images is a JSON string
+        if (typeof imgs === "string") {
+          try { imgs = JSON.parse(imgs); } catch { continue; }
+        }
+        if (!Array.isArray(imgs)) continue;
         for (const img of imgs) {
-          if (img?.url && typeof img.url === "string" && img.url.startsWith("http")) {
-            allImages.push({ url: img.url, boardId: board.id, prompt: board.prompt });
+          const url = typeof img === "object" && img !== null ? (img as any).url : null;
+          if (url && typeof url === "string" && url.startsWith("http")) {
+            allImages.push({ url, boardId: board.id, prompt: board.prompt });
           }
         }
       }
+
+      console.log("[ShowcaseTicker] Valid images found:", allImages.length);
 
       if (allImages.length < 9) return;
 
