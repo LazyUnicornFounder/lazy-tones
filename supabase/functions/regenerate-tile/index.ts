@@ -47,6 +47,11 @@ async function generateGatewayImage(apiKey: string | null, imagePrompt: string):
 async function generateImage(replicateToken: string | undefined, apiKey: string | null, originalPrompt: string, index: number, maxRetries = 5) {
   let prompt = originalPrompt;
 
+  if (!replicateToken) {
+    const gatewayImage = await generateGatewayImage(apiKey, prompt);
+    return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
+  }
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
@@ -92,7 +97,7 @@ async function generateImage(replicateToken: string | undefined, apiKey: string 
           console.log(`Softened prompt for tile ${index}: ${prompt}`);
           const gatewayImage = await generateGatewayImage(apiKey, prompt);
           if (gatewayImage) {
-            return { url: gatewayImage, sub_prompt: originalPrompt };
+            return { url: gatewayImage.trim(), sub_prompt: originalPrompt };
           }
         }
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
@@ -100,8 +105,8 @@ async function generateImage(replicateToken: string | undefined, apiKey: string 
       }
 
       const url = typeof result.output === "string"
-        ? result.output
-        : (Array.isArray(result.output) ? result.output[0] : "") || "";
+        ? result.output.trim()
+        : (Array.isArray(result.output) ? String(result.output[0] || "").trim() : "");
 
       if (url) {
         return { url, sub_prompt: originalPrompt };
@@ -114,7 +119,7 @@ async function generateImage(replicateToken: string | undefined, apiKey: string 
   }
 
   const gatewayImage = await generateGatewayImage(apiKey, prompt);
-  return { url: gatewayImage || createFallbackImage(), sub_prompt: originalPrompt };
+  return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
 }
 
 Deno.serve(async (req) => {
