@@ -89,7 +89,7 @@ export default function Index() {
     } finally {
       setGenerating(false);
     }
-  }, [prompt, generating]);
+  }, [prompt, generating, user, creditsRemaining, navigate]);
 
   const handleRegenerateTile = async (tileIndex: number) => {
     if (!activeBoard || regeneratingTile !== null) return;
