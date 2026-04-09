@@ -101,14 +101,19 @@ export default function Index() {
     }
   };
 
+  const exportRef = useRef<HTMLDivElement>(null);
+
   const handleExport = async () => {
-    if (!boardRef.current || exporting) return;
+    if (!exportRef.current || exporting) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(boardRef.current, {
+      // Temporarily show the export wrapper
+      exportRef.current.style.display = "block";
+      const dataUrl = await toPng(exportRef.current, {
         backgroundColor: "#f5f4ed",
         pixelRatio: 2,
       });
+      exportRef.current.style.display = "none";
       const link = document.createElement("a");
       link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
       link.href = dataUrl;
@@ -275,6 +280,59 @@ export default function Index() {
             </div>
           </div>
         </main>
+      )}
+
+      {/* Hidden export wrapper with branding */}
+      {activeBoard && (
+        <div ref={exportRef} style={{ display: "none", position: "absolute", left: "-9999px", top: 0 }}>
+          <div style={{ padding: 64, backgroundColor: "#f5f4ed", maxWidth: 960 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>LazyMood</span>
+              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazymood.lovable.app</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+              {activeBoard.images?.slice(0, 6).map((img, i) => (
+                <div key={i} style={{ aspectRatio: "1", borderRadius: 12, overflow: "hidden", backgroundColor: "#eae9e1" }}>
+                  {img.url ? (
+                    <img src={img.url} alt={img.sub_prompt} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
+                  ) : (
+                    <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "#5e5d5966" }}>—</div>
+                  )}
+                </div>
+              ))}
+              {/* Palette */}
+              <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
+                <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Palette</p>
+                {activeBoard.palette?.map((color, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: color }} />
+                    <span style={{ fontSize: 11, color: "#5e5d59", fontFamily: "monospace" }}>{color}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Fonts */}
+              <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
+                <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Fonts</p>
+                <p style={{ fontSize: 11, color: "#5e5d59" }}>Heading</p>
+                <p style={{ fontSize: 18, fontFamily: "Georgia, serif", color: "#141413", marginBottom: 8 }}>{activeBoard.fonts?.heading}</p>
+                <p style={{ fontSize: 11, color: "#5e5d59" }}>Body</p>
+                <p style={{ fontSize: 14, color: "#141413" }}>{activeBoard.fonts?.body}</p>
+              </div>
+              {/* Keywords */}
+              <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
+                <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Keywords</p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {activeBoard.keywords?.map((kw) => (
+                    <span key={kw} style={{ fontSize: 11, backgroundColor: "#eae9e1", color: "#5e5d59", padding: "2px 8px", borderRadius: 6 }}>{kw}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
+              <span style={{ fontSize: 12, color: "#5e5d59", fontFamily: "Inter, sans-serif" }}>lazymood.lovable.app</span>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Footer */}
