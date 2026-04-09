@@ -19,11 +19,7 @@ export default function Index() {
   const { user, signInWithGoogle } = useAuth();
 
   const handleGenerate = () => {
-    if (user) {
-      window.location.href = `/app?prompt=${encodeURIComponent(prompt)}`;
-    } else {
-      signInWithGoogle();
-    }
+    window.location.href = `/app?prompt=${encodeURIComponent(prompt)}`;
   };
 
   return (

@@ -22,46 +22,40 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Auth is optional — check if user is signed in
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) userId = user.id;
+    }
+
+    // If signed in, check credits
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", userId)
+        .single();
+
+      if (profile && profile.credits_remaining <= 0) {
+        return new Response(JSON.stringify({ error: "No credits remaining" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { prompt } = await req.json();
     if (!prompt || typeof prompt !== "string" || prompt.length > 500) {
       return new Response(JSON.stringify({ error: "Invalid prompt" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check credits
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("credits_remaining")
-      .eq("id", user.id)
-      .single();
-
-    if (!profile || profile.credits_remaining <= 0) {
-      return new Response(JSON.stringify({ error: "No credits remaining" }), {
-        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -99,11 +93,11 @@ Deno.serve(async (req) => {
       sub_prompt: spec.image_prompts[i],
     }));
 
-    // Save board
+    // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
       .from("boards")
       .insert({
-        user_id: user.id,
+        user_id: userId,
         prompt,
         palette: spec.palette,
         fonts: spec.fonts,
@@ -115,11 +109,20 @@ Deno.serve(async (req) => {
 
     if (insertError) throw insertError;
 
-    // Decrement credits
-    await supabase
-      .from("profiles")
-      .update({ credits_remaining: profile.credits_remaining - 1 })
-      .eq("id", user.id);
+    // Decrement credits if signed in
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", userId)
+        .single();
+      if (profile) {
+        await supabase
+          .from("profiles")
+          .update({ credits_remaining: profile.credits_remaining - 1 })
+          .eq("id", userId);
+      }
+    }
 
     return new Response(JSON.stringify({ board }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

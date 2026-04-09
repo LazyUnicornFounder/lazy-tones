@@ -18,9 +18,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [generating, setGenerating] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/");
-  }, [user, authLoading, navigate]);
+  // No auth redirect — allow anonymous board generation
 
   useEffect(() => {
     if (!user) return;
