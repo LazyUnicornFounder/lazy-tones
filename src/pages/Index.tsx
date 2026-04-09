@@ -59,8 +59,14 @@ export default function Index() {
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
-    setGenerating(true);
-    setSubmittedPrompt(prompt);
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (creditsRemaining !== null && creditsRemaining <= 0) {
+      setError("No boards remaining. Upgrade your plan for more.");
+      return;
+    }
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
