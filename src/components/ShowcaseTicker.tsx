@@ -7,32 +7,46 @@ interface ShowcaseImage {
   prompt: string;
 }
 
+function normalizeImages(value: unknown): Array<{ url?: string }> {
+  if (!value) return [];
+  if (Array.isArray(value)) return value as Array<{ url?: string }>;
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
-  // Duplicate enough times to fill viewport seamlessly
-  const items = [...images, ...images, ...images];
-  const duration = 60 + images.length * 3;
+  const items = images.length > 0 ? [...images, ...images] : [];
+  const duration = Math.max(28, images.length * 2.5);
 
   return (
-    <div className="overflow-hidden relative">
-      {/* Edge fades */}
-      <div className="absolute inset-y-0 left-0 w-16 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-16 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+    <div className="relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-background to-transparent" />
       <div
-        className={`flex gap-3 ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
+        className={`flex w-max gap-3 will-change-transform ${reverse ? "animate-ticker-reverse" : "animate-ticker"}`}
         style={{ animationDuration: `${duration}s` }}
       >
         {items.map((img, i) => (
           <a
             key={`${img.boardId}-${i}`}
             href={`/board/${img.boardId}`}
-            className="shrink-0 group"
+            className="group block shrink-0"
+            aria-label={`Open ${img.prompt}`}
           >
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-xl overflow-hidden bg-accent">
+            <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
               <img
                 src={img.url}
                 alt={img.prompt}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                decoding="async"
+                referrerPolicy="no-referrer"
               />
             </div>
           </a>
@@ -46,6 +60,8 @@ export default function ShowcaseTicker() {
   const [rows, setRows] = useState<ShowcaseImage[][]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function fetchShowcase() {
       const { data } = await supabase
         .from("boards")
@@ -54,60 +70,47 @@ export default function ShowcaseTicker() {
         .order("created_at", { ascending: false })
         .limit(30);
 
-      if (!data || data.length === 0) return;
+      if (!data || cancelled) return;
 
-      // Extract all valid images (skip data URIs and empty URLs)
-      const allImages: ShowcaseImage[] = [];
-      for (const board of data) {
-        let imgs = board.images;
-        if (!imgs) continue;
-        // Handle case where images is a JSON string
-        if (typeof imgs === "string") {
-          try { imgs = JSON.parse(imgs); } catch { continue; }
-        }
-        if (!Array.isArray(imgs)) continue;
-        for (const img of imgs) {
-          const url = typeof img === "object" && img !== null ? (img as any).url : null;
-          if (url && typeof url === "string" && url.startsWith("http")) {
-            allImages.push({ url, boardId: board.id, prompt: board.prompt });
-          }
-        }
-      }
-
-      console.log("[ShowcaseTicker] Valid images found:", allImages.length);
-
-      if (allImages.length < 9) return;
-
-      // Shuffle deterministically by day
-      const daySeed = new Date().getDate();
-      const shuffled = [...allImages].sort((a, b) => {
-        const ha = (a.url.length * 31 + daySeed) % 1000;
-        const hb = (b.url.length * 31 + daySeed) % 1000;
-        return ha - hb;
+      const allImages: ShowcaseImage[] = data.flatMap((board) => {
+        const images = normalizeImages(board.images);
+        return images
+          .map((img) => (typeof img?.url === "string" ? img.url.trim() : ""))
+          .filter((url) => url.length > 0 && !url.startsWith("data:"))
+          .map((url) => ({ url, boardId: board.id, prompt: board.prompt }));
       });
 
-      // Split evenly into 3 rows
-      const perRow = Math.ceil(shuffled.length / 3);
-      const r: ShowcaseImage[][] = [];
-      for (let i = 0; i < 3; i++) {
-        const slice = shuffled.slice(i * perRow, (i + 1) * perRow);
-        if (slice.length >= 3) r.push(slice);
+      if (allImages.length === 0) {
+        setRows([]);
+        return;
       }
-      setRows(r);
+
+      const maxPerRow = 14;
+      const nextRows: ShowcaseImage[][] = [];
+      for (let i = 0; i < 3; i++) {
+        const start = i * maxPerRow;
+        const slice = allImages.slice(start, start + maxPerRow);
+        if (slice.length > 0) nextRows.push(slice);
+      }
+
+      setRows(nextRows);
     }
 
     fetchShowcase();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (rows.length === 0) return null;
 
   return (
-    <section className="py-12 space-y-3 overflow-hidden">
-      <p className="text-center text-xs text-muted-foreground mb-6 tracking-wide uppercase">
+    <section className="overflow-hidden py-12 space-y-3">
+      <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
         Recent boards from the community
       </p>
-      {rows.map((row, i) => (
-        <TickerRow key={i} images={row} reverse={i % 2 === 1} />
+      {rows.map((row, index) => (
+        <TickerRow key={`row-${index}`} images={row} reverse={index % 2 === 1} />
       ))}
     </section>
   );
