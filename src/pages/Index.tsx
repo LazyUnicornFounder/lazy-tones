@@ -132,14 +132,21 @@ export default function Index() {
       images.map(
         (img) =>
           new Promise<void>((resolve) => {
-            if (img.complete) {
+            if (img.complete && img.naturalWidth > 0) {
               resolve();
               return;
             }
 
             const done = () => resolve();
-            img.addEventListener("load", done, { once: true });
-            img.addEventListener("error", done, { once: true });
+            const timeout = window.setTimeout(done, 5000);
+            img.addEventListener("load", () => {
+              window.clearTimeout(timeout);
+              done();
+            }, { once: true });
+            img.addEventListener("error", () => {
+              window.clearTimeout(timeout);
+              done();
+            }, { once: true });
           })
       )
     );
@@ -152,13 +159,13 @@ export default function Index() {
     setExporting(true);
 
     try {
-      exportNode.style.display = "block";
       await waitForExportAssets(exportNode);
 
       const dataUrl = await toPng(exportNode, {
         backgroundColor: "#f5f4ed",
         pixelRatio: 2,
         cacheBust: true,
+        skipAutoScale: true,
       });
 
       const link = document.createElement("a");
@@ -170,7 +177,6 @@ export default function Index() {
       console.error("Export failed:", err);
       toast.error("Export failed. Try again.");
     } finally {
-      exportNode.style.display = "none";
       setExporting(false);
     }
   };
@@ -332,8 +338,8 @@ export default function Index() {
 
       {/* Hidden export wrapper with branding */}
       {activeBoard && (
-        <div ref={exportRef} style={{ display: "none", position: "absolute", left: "-9999px", top: 0 }}>
-          <div style={{ padding: 64, backgroundColor: "#f5f4ed", maxWidth: 960 }}>
+        <div aria-hidden="true" style={{ position: "fixed", left: -3000, top: 0, pointerEvents: "none" }}>
+          <div ref={exportRef} style={{ padding: 64, backgroundColor: "#f5f4ed", width: 960, boxSizing: "border-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
               <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>LazyMood</span>
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazymood.lovable.app</span>
