@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${replicateToken}`,
+          Authorization: `Token ${replicateToken}`,
           "Content-Type": "application/json",
           Prefer: "wait",
         },
@@ -144,10 +144,16 @@ Deno.serve(async (req) => {
     );
 
     const imageResults = await Promise.all(imagePromises);
-    const images = imageResults.map((r: any, i: number) => ({
-      url: r.output?.[0] || r.output || "",
-      sub_prompt: spec.image_prompts[i],
-    }));
+    console.log("Replicate results sample:", JSON.stringify(imageResults[0]).slice(0, 500));
+    const images = imageResults.map((r: any, i: number) => {
+      // Handle various Replicate output formats
+      let url = "";
+      if (typeof r.output === "string") url = r.output;
+      else if (Array.isArray(r.output) && r.output.length > 0) url = r.output[0];
+      else if (r.urls?.get) url = r.urls.get;
+      if (!url && r.error) console.error("Replicate error for tile", i, r.error);
+      return { url, sub_prompt: spec.image_prompts[i] };
+    });
 
     // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
