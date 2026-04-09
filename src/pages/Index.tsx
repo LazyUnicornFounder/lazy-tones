@@ -62,7 +62,33 @@ export default function Index() {
   const handleShare = async () => {
     if (!activeBoard) return;
     const url = `${window.location.origin}/board/${activeBoard.id}`;
-    await navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleExport = async () => {
+    if (!boardRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(boardRef.current, {
+        backgroundColor: "#f5f4ed",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Board exported as PNG!");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Export failed. Try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
