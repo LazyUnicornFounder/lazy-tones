@@ -5,12 +5,9 @@ const STEPS = [
   "Crafting color palette",
   "Selecting typography",
   "Finding keywords",
-  "Generating image 1 of 6",
-  "Generating image 2 of 6",
-  "Generating image 3 of 6",
-  "Generating image 4 of 6",
-  "Generating image 5 of 6",
-  "Generating image 6 of 6",
+  "Generating image 1 of 3",
+  "Generating image 2 of 3",
+  "Generating image 3 of 3",
   "Assembling your board",
 ];
 
