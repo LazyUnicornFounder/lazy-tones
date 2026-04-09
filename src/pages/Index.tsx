@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import LoadingBoard from "@/components/LoadingBoard";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { toPng } from "html-to-image";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
 
 export default function Index() {
   const [prompt, setPrompt] = useState("");
@@ -13,6 +15,8 @@ export default function Index() {
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
