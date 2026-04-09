@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import LoadingBoard from "@/components/LoadingBoard";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { toPng } from "html-to-image";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
 
 export default function Index() {
   const [prompt, setPrompt] = useState("");
@@ -13,6 +15,8 @@ export default function Index() {
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
@@ -58,7 +62,33 @@ export default function Index() {
   const handleShare = async () => {
     if (!activeBoard) return;
     const url = `${window.location.origin}/board/${activeBoard.id}`;
-    await navigator.clipboard.writeText(url);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied to clipboard!");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
+
+  const handleExport = async () => {
+    if (!boardRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(boardRef.current, {
+        backgroundColor: "#f5f4ed",
+        pixelRatio: 2,
+      });
+      const link = document.createElement("a");
+      link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Board exported as PNG!");
+    } catch (err) {
+      console.error("Export failed:", err);
+      toast.error("Export failed. Try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -126,14 +156,15 @@ export default function Index() {
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={handleShare}>
                   <Share2 className="h-3.5 w-3.5 mr-1" /> Share
                 </Button>
-                <Button variant="outline" size="sm" className="rounded-xl">
-                  <Download className="h-3.5 w-3.5 mr-1" /> Export
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExport} disabled={exporting}>
+                  {exporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+                  {exporting ? "Exporting…" : "Export"}
                 </Button>
               </div>
             </div>
 
             {/* 9-tile grid */}
-            <div className="grid grid-cols-3 gap-4">
+            <div ref={boardRef} className="grid grid-cols-3 gap-4">
               {activeBoard.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
                   {img.url ? (
