@@ -93,20 +93,9 @@ export default function ShowcaseTicker() {
           .map((url) => ({ url, boardId: board.id, prompt: board.prompt }));
       });
 
-      const checked = await Promise.all(
-        rawImages.slice(0, 100).map(async (image) => ({
-          image,
-          ok: await canLoadImage(image.url),
-        }))
-      );
-
       if (cancelled) return;
 
-      const validImages = checked.filter((entry) => entry.ok).map((entry) => entry.image);
-      if (validImages.length === 0) {
-        setRows([]);
-        return;
-      }
+      const validImages = rawImages;
 
       // Spread images so no two consecutive ones share the same board
       function spreadByBoard(imgs: ShowcaseImage[]): ShowcaseImage[] {
