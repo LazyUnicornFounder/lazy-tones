@@ -63,13 +63,9 @@ Deno.serve(async (req) => {
     prompts = DEFAULT_PROMPTS;
   }
 
-  const results: { prompt: string; boardId?: string; error?: string }[] = [];
-
-  for (const prompt of prompts) {
-    console.log(`\n=== Generating: ${prompt} ===`);
-
-    try {
-      // Step 1: Get creative direction
+  // Process only ONE board per invocation to stay within timeout
+  const prompt = prompts[0];
+  const remainingPrompts = prompts.slice(1);
       const specResp = await fetch(
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
