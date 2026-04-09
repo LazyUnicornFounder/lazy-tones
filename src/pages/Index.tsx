@@ -305,20 +305,30 @@ export default function Index() {
                       <Loader2 className="h-6 w-6 text-primary animate-spin" />
                       <span className="text-xs text-muted-foreground">Regenerating…</span>
                     </div>
-                  ) : img.url ? (
-                    <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
+                  ) : img.url && !img.url.startsWith("data:image/svg+xml") ? (
+                    <>
+                      <img src={img.url} alt={img.sub_prompt} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => handleRegenerateTile(i)}
+                        className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                      >
+                        <RefreshCw className="h-5 w-5 text-primary-foreground" />
+                      </button>
+                    </>
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-accent">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-accent gap-3">
+                      <AlertCircle className="h-6 w-6 text-muted-foreground/50" />
+                      <span className="text-xs text-muted-foreground">Image failed</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-xl text-xs"
+                        onClick={() => handleRegenerateTile(i)}
+                        disabled={regeneratingTile !== null}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" /> Retry
+                      </Button>
                     </div>
-                  )}
-                  {regeneratingTile !== i && (
-                    <button
-                      onClick={() => handleRegenerateTile(i)}
-                      className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
-                    >
-                      <RefreshCw className="h-5 w-5 text-primary-foreground" />
-                    </button>
                   )}
                 </div>
               ))}
