@@ -32,10 +32,15 @@ export default function Index() {
   const [exporting, setExporting] = useState(false);
   const boardRef = useRef<HTMLDivElement>(null);
   const [ideaIndex, setIdeaIndex] = useState(0);
+  const [ideaVisible, setIdeaVisible] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+      setIdeaVisible(false);
+      setTimeout(() => {
+        setIdeaIndex((prev) => (prev + 1) % PROMPT_IDEAS.length);
+        setIdeaVisible(true);
+      }, 400);
     }, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -154,7 +159,7 @@ export default function Index() {
             </div>
             <button
               onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className={`text-sm text-muted-foreground hover:text-foreground transition-all duration-400 cursor-pointer ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}
             >
               Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
             </button>
