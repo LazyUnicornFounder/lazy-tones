@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_boards_public_created ON public.boards (is_public, created_at DESC) WHERE is_public = true;
