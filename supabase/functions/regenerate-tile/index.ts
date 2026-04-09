@@ -4,21 +4,47 @@ const corsHeaders = {
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const escapeXml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-const createFallbackImage = (label: string) => {
-  const safeLabel = escapeXml(label).slice(0, 72);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#f5f4ed"/><rect x="56" y="56" width="1088" height="1088" rx="36" fill="#faf9f5" stroke="#d9d5cb" stroke-width="4"/><text x="600" y="500" text-anchor="middle" font-family="Georgia, serif" font-size="52" fill="#5e5d59">Image unavailable</text><text x="600" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#7a7974">${safeLabel}</text><text x="600" y="665" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#c96442">Try regenerating this tile</text></svg>`;
+const createFallbackImage = () => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#f5f4ed"/><circle cx="280" cy="280" r="190" fill="#e8ded0"/><circle cx="910" cy="330" r="210" fill="#c96442" fill-opacity="0.18"/><circle cx="420" cy="880" r="220" fill="#d7c2b5" fill-opacity="0.7"/><rect x="500" y="640" width="420" height="220" rx="40" fill="#faf9f5" stroke="#e2dbd2" stroke-width="4"/><path d="M570 785C625 700 705 675 780 700C840 720 878 770 900 830" fill="none" stroke="#8b6f4e" stroke-opacity="0.35" stroke-width="18" stroke-linecap="round"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };
 
-async function generateImage(replicateToken: string | undefined, originalPrompt: string, index: number, maxRetries = 5) {
+async function generateGatewayImage(apiKey: string | null, imagePrompt: string): Promise<string> {
+  if (!apiKey) return "";
+
+  try {
+    const gatewayResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-image",
+        messages: [
+          {
+            role: "user",
+            content: `Create one square editorial photograph inspired by: ${imagePrompt}. No text, no collage, no watermarks, no typography.`,
+          },
+        ],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!gatewayResp.ok) {
+      console.error("Gateway image fallback error:", gatewayResp.status, await gatewayResp.text());
+      return "";
+    }
+
+    const gatewayData = await gatewayResp.json();
+    return gatewayData?.choices?.[0]?.message?.images?.[0]?.image_url?.url || "";
+  } catch (error) {
+    console.error("Gateway image fallback failed:", error);
+    return "";
+  }
+}
+
+async function generateImage(replicateToken: string | undefined, apiKey: string | null, originalPrompt: string, index: number, maxRetries = 5) {
   let prompt = originalPrompt;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -60,9 +86,14 @@ async function generateImage(replicateToken: string | undefined, originalPrompt:
 
       if (message) {
         console.error("Replicate error tile", index, message);
-        if (message.toLowerCase().includes("flagged") || message.toLowerCase().includes("sensitive")) {
+        const lowered = message.toLowerCase();
+        if (lowered.includes("flagged") || lowered.includes("sensitive")) {
           prompt = `Abstract editorial photograph inspired by ${originalPrompt.replace(/[^a-zA-Z0-9 ,]/g, " ").trim()}`;
           console.log(`Softened prompt for tile ${index}: ${prompt}`);
+          const gatewayImage = await generateGatewayImage(apiKey, prompt);
+          if (gatewayImage) {
+            return { url: gatewayImage, sub_prompt: originalPrompt };
+          }
         }
         await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
         continue;
@@ -82,7 +113,8 @@ async function generateImage(replicateToken: string | undefined, originalPrompt:
     await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
   }
 
-  return { url: createFallbackImage(originalPrompt), sub_prompt: originalPrompt };
+  const gatewayImage = await generateGatewayImage(apiKey, prompt);
+  return { url: gatewayImage || createFallbackImage(), sub_prompt: originalPrompt };
 }
 
 Deno.serve(async (req) => {
@@ -124,7 +156,8 @@ Deno.serve(async (req) => {
       : originalPrompt;
 
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
-    images[tile_index] = await generateImage(replicateToken, imagePrompt, tile_index);
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    images[tile_index] = await generateImage(replicateToken, lovableApiKey, imagePrompt, tile_index);
 
     const { data: updatedBoard, error: updateError } = await supabase
       .from("boards")
