@@ -75,11 +75,12 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
         {/* Inspirational quote */}
         <div className="text-center">
           <p
-            className={`text-xs text-muted-foreground/60 italic max-w-sm mx-auto transition-opacity duration-400 ${
+            className={`text-xs text-muted-foreground/60 italic max-w-lg mx-auto transition-opacity duration-400 ${
               quoteFading ? "opacity-0" : "opacity-100"
             }`}
           >
-            {INSPIRATIONS[quoteIndex]}
+            "{INSPIRATIONS[quoteIndex].quote}" <span className="hidden md:inline">— {INSPIRATIONS[quoteIndex].author}</span>
+            <span className="block md:hidden mt-0.5">— {INSPIRATIONS[quoteIndex].author}</span>
           </p>
         </div>
 
