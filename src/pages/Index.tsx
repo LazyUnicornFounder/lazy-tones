@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import LoadingBoard from "@/components/LoadingBoard";
+import ShowcaseTicker from "@/components/ShowcaseTicker";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
@@ -96,31 +97,17 @@ export default function Index() {
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
     );
-
-    if (document.fonts?.ready) {
-      await document.fonts.ready;
-    }
-
+    if (document.fonts?.ready) await document.fonts.ready;
     const images = Array.from(node.querySelectorAll("img"));
     await Promise.all(
       images.map(
         (img) =>
           new Promise<void>((resolve) => {
-            if (img.complete && img.naturalWidth > 0) {
-              resolve();
-              return;
-            }
-
+            if (img.complete && img.naturalWidth > 0) { resolve(); return; }
             const done = () => resolve();
             const timeout = window.setTimeout(done, 5000);
-            img.addEventListener("load", () => {
-              window.clearTimeout(timeout);
-              done();
-            }, { once: true });
-            img.addEventListener("error", () => {
-              window.clearTimeout(timeout);
-              done();
-            }, { once: true });
+            img.addEventListener("load", () => { window.clearTimeout(timeout); done(); }, { once: true });
+            img.addEventListener("error", () => { window.clearTimeout(timeout); done(); }, { once: true });
           })
       )
     );
@@ -128,20 +115,16 @@ export default function Index() {
 
   const handleExport = async () => {
     if (!exportRef.current || exporting) return;
-
     const exportNode = exportRef.current;
     setExporting(true);
-
     try {
       await waitForExportAssets(exportNode);
-
       const dataUrl = await toPng(exportNode, {
         backgroundColor: "#f5f4ed",
         pixelRatio: 2,
         cacheBust: true,
         skipAutoScale: true,
       });
-
       const link = document.createElement("a");
       link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
       link.href = dataUrl;
@@ -164,77 +147,75 @@ export default function Index() {
 
       {/* Main content */}
       {!activeBoard && !generating ? (
-        /* Hero — prompt entry */
-        <section className="flex-1 flex items-center justify-center px-6">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
-              Mood boards in 60 seconds
-            </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-              Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mt-8">
-              <Input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe a vibe…"
-                className="h-12 text-base rounded-xl bg-card border-border"
-                onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
-              />
-              <Button
-                onClick={handleGenerate}
-                disabled={!prompt || generating}
-                className="h-12 px-6 rounded-xl w-full sm:w-auto"
-              >
-                <ArrowRight className="ml-1 h-4 w-4" />
-                Generate Board
-              </Button>
-            </div>
-            <div className={`flex items-center justify-center gap-2 transition-opacity duration-700 ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}>
-              <button
-                onClick={() => {
-                  setIdeaVisible(false);
-                  setTimeout(() => {
-                    setIdeaIndex((prev) => (prev + 1) % promptIdeas.length);
-                    setIdeaVisible(true);
-                  }, 300);
-                }}
-                className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
-              >
-                <RefreshCw className="h-3 w-3" />
-              </button>
-              <button
-                onClick={() => setPrompt(promptIdeas[ideaIndex])}
-                className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                Try: <span className="italic">{promptIdeas[ideaIndex]}</span>
-              </button>
-            </div>
-            {error && (
-              <div className="max-w-xl mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-left">
-                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">{error}</p>
+        <>
+          {/* Hero — prompt entry */}
+          <section className="flex-1 flex items-center justify-center px-6 py-16">
+            <div className="max-w-3xl mx-auto text-center space-y-6">
+              <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
+                Mood boards in 60 seconds
+              </h1>
+              <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto mt-8">
+                <Input
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe a vibe…"
+                  className="h-12 text-base rounded-xl bg-card border-border"
+                  onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
+                />
+                <Button
+                  onClick={handleGenerate}
+                  disabled={!prompt || generating}
+                  className="h-12 px-6 rounded-xl w-full sm:w-auto"
+                >
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                  Generate Board
+                </Button>
               </div>
-            )}
-          </div>
-        </section>
+              <div className={`flex items-center justify-center gap-2 transition-opacity duration-700 ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}>
+                <button
+                  onClick={() => {
+                    setIdeaVisible(false);
+                    setTimeout(() => {
+                      setIdeaIndex((prev) => (prev + 1) % promptIdeas.length);
+                      setIdeaVisible(true);
+                    }, 300);
+                  }}
+                  className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => setPrompt(promptIdeas[ideaIndex])}
+                  className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  Try: <span className="italic">{promptIdeas[ideaIndex]}</span>
+                </button>
+              </div>
+              {error && (
+                <div className="max-w-xl mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-left">
+                  <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-sm text-muted-foreground">{error}</p>
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Showcase ticker */}
+          <ShowcaseTicker />
+        </>
       ) : generating ? (
-        /* Loading experience */
         <LoadingBoard prompt={submittedPrompt} />
       ) : (
         /* Board result */
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-4xl mx-auto space-y-6">
-            {/* Toolbar */}
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground italic">"{activeBoard.prompt}"</p>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => setActiveBoard(null)}
-                >
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setActiveBoard(null)}>
                   New Board
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={handleShare}>
@@ -247,7 +228,6 @@ export default function Index() {
               </div>
             </div>
 
-            {/* 9-tile grid */}
             <div ref={boardRef} className="grid grid-cols-3 gap-4">
               {activeBoard.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
@@ -280,7 +260,6 @@ export default function Index() {
                 </div>
               ))}
 
-              {/* Palette tile */}
               <div className="bg-card rounded-xl border border-border p-4 space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Palette</p>
                 <div className="space-y-1.5">
@@ -293,7 +272,6 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Fonts tile */}
               <div className="bg-card rounded-xl border border-border p-4 space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Fonts</p>
                 <div className="space-y-3">
@@ -308,7 +286,6 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Keywords tile */}
               <div className="bg-card rounded-xl border border-border p-4 space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Keywords</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -324,7 +301,7 @@ export default function Index() {
         </main>
       )}
 
-      {/* Hidden export wrapper with branding */}
+      {/* Hidden export wrapper */}
       {activeBoard && (
         <div aria-hidden="true" style={{ position: "fixed", left: -3000, top: 0, pointerEvents: "none" }}>
           <div ref={exportRef} style={{ padding: 64, backgroundColor: "#f5f4ed", width: 960, boxSizing: "border-box" }}>
@@ -342,7 +319,6 @@ export default function Index() {
                   )}
                 </div>
               ))}
-              {/* Palette */}
               <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
                 <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Palette</p>
                 {activeBoard.palette?.map((color, i) => (
@@ -352,7 +328,6 @@ export default function Index() {
                   </div>
                 ))}
               </div>
-              {/* Fonts */}
               <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
                 <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Fonts</p>
                 <p style={{ fontSize: 11, color: "#5e5d59" }}>Heading</p>
@@ -360,7 +335,6 @@ export default function Index() {
                 <p style={{ fontSize: 11, color: "#5e5d59" }}>Body</p>
                 <p style={{ fontSize: 14, color: "#141413" }}>{activeBoard.fonts?.body}</p>
               </div>
-              {/* Keywords */}
               <div style={{ backgroundColor: "#faf9f5", borderRadius: 12, border: "1px solid #eae9e1", padding: 16 }}>
                 <p style={{ fontSize: 11, color: "#5e5d59", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Keywords</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
