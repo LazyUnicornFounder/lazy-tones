@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +10,12 @@ import LoadingBoard from "@/components/LoadingBoard";
 import ShowcaseTicker from "@/components/ShowcaseTicker";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, LogOut } from "lucide-react";
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const promptIdeas = useMemo(() => getDailyPromptIdeas(), []);
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
@@ -23,6 +27,24 @@ export default function Index() {
   const boardRef = useRef<HTMLDivElement>(null);
   const [ideaIndex, setIdeaIndex] = useState(() => Math.floor(Math.random() * promptIdeas.length));
   const [ideaVisible, setIdeaVisible] = useState(true);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+
+  // Fetch credits when user is signed in
+  useEffect(() => {
+    if (!user) {
+      setCreditsRemaining(null);
+      return;
+    }
+    const fetchCredits = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("credits_remaining")
+        .eq("id", user.id)
+        .single();
+      if (data) setCreditsRemaining(data.credits_remaining);
+    };
+    fetchCredits();
+  }, [user, activeBoard]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -37,6 +59,14 @@ export default function Index() {
 
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (creditsRemaining !== null && creditsRemaining <= 0) {
+      setError("No boards remaining. Upgrade your plan for more.");
+      return;
+    }
     setGenerating(true);
     setSubmittedPrompt(prompt);
     setError(null);
@@ -59,7 +89,7 @@ export default function Index() {
     } finally {
       setGenerating(false);
     }
-  }, [prompt, generating]);
+  }, [prompt, generating, user, creditsRemaining, navigate]);
 
   const handleRegenerateTile = async (tileIndex: number) => {
     if (!activeBoard || regeneratingTile !== null) return;
@@ -141,8 +171,24 @@ export default function Index() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-center px-6 py-4">
+      <nav className="flex items-center justify-between px-6 py-4">
         <span className="font-serif text-xl tracking-tight text-foreground">LazyMood</span>
+        <div className="flex items-center gap-3">
+          {user && creditsRemaining !== null && (
+            <span className="text-sm text-muted-foreground">
+              {creditsRemaining} board{creditsRemaining !== 1 ? "s" : ""} remaining
+            </span>
+          )}
+          {user ? (
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+            </Button>
+          ) : (
+            <Button size="sm" className="rounded-xl" onClick={() => navigate("/auth")}>
+              Sign Up
+            </Button>
+          )}
+        </div>
       </nav>
 
       {/* Main content */}
