@@ -64,10 +64,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Example Boards */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl text-center mb-12 text-foreground">See what's possible</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {exampleBoards.map((board) => (
               <div key={board.id} className="bg-card rounded-xl border border-border p-5 space-y-4">
