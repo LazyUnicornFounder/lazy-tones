@@ -44,7 +44,7 @@ export default function BoardView() {
   return (
     <div className="min-h-screen">
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <Link to="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</Link>
+        <Link to="/" className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</Link>
         <Link to="/">
           <Button size="sm" className="rounded-xl">
             Make your own <ArrowRight className="ml-1 h-3.5 w-3.5" />

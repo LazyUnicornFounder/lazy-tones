@@ -14,13 +14,13 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex flex-col">
       <nav className="flex items-center justify-center px-6 py-4">
-        <a href="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</a>
+        <a href="/" className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</a>
       </nav>
 
       <section className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-sm w-full text-center space-y-6">
           <h1 className="text-3xl tracking-tight text-foreground">
-            Sign in to LazyMood
+            Sign in to Lazy Tones
           </h1>
           <p className="text-muted-foreground">
             Create up to 3 mood boards for free.
