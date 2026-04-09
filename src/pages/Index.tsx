@@ -344,7 +344,7 @@ export default function Index() {
               <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazytones.lovable.app</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-              {activeBoard.images?.slice(0, 6).map((img, i) => (
+              {activeBoard.images?.slice(0, 3).map((img, i) => (
                 <div key={i} style={{ aspectRatio: "1", borderRadius: 12, overflow: "hidden", backgroundColor: "#eae9e1" }}>
                   {img.url ? (
                     <img src={img.url} alt={img.sub_prompt} style={{ width: "100%", height: "100%", objectFit: "cover" }} crossOrigin="anonymous" />
