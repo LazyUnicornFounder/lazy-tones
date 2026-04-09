@@ -1,11 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShowcaseImage {
   url: string;
   boardId: string;
   prompt: string;
 }
+
+const SHOWCASE_CACHE_KEY = "showcase-ticker:v2";
+const ROW_COUNT = 2;
+const MAX_PER_ROW = 6;
+const BOARD_LIMIT = ROW_COUNT * MAX_PER_ROW;
 
 function normalizeImages(value: unknown): Array<{ url?: string }> {
   if (!value) return [];
@@ -21,19 +27,46 @@ function normalizeImages(value: unknown): Array<{ url?: string }> {
   return [];
 }
 
-function canLoadImage(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.referrerPolicy = "no-referrer";
-    img.src = url;
-  });
+function readCachedRows(): ShowcaseImage[][] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const raw = window.sessionStorage.getItem(SHOWCASE_CACHE_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((row): row is ShowcaseImage[] => Array.isArray(row))
+      .map((row) =>
+        row.filter(
+          (item): item is ShowcaseImage =>
+            typeof item?.url === "string" &&
+            typeof item?.boardId === "string" &&
+            typeof item?.prompt === "string"
+        )
+      )
+      .filter((row) => row.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedRows(rows: ShowcaseImage[][]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.sessionStorage.setItem(SHOWCASE_CACHE_KEY, JSON.stringify(rows));
+  } catch {
+    // Ignore cache failures.
+  }
 }
 
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
   const items = images.length > 0 ? [...images, ...images] : [];
-  const duration = Math.max(120, images.length * 12);
+  const duration = Math.max(90, images.length * 10);
+  const eagerImageCount = images.length;
 
   return (
     <div className="relative overflow-hidden">
@@ -53,9 +86,13 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
             <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
               <img
                 src={img.url}
-                alt=""
+                alt={`Mood board preview for ${img.prompt}`}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
+                loading={i < eagerImageCount ? "eager" : "lazy"}
+                fetchPriority={i < Math.min(eagerImageCount, 4) ? "high" : "low"}
+                decoding="async"
+                width={160}
+                height={160}
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const link = e.currentTarget.closest("a");
@@ -71,60 +108,55 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
 }
 
 export default function ShowcaseTicker() {
-  const [rows, setRows] = useState<ShowcaseImage[][]>([]);
+  const [rows, setRows] = useState<ShowcaseImage[][]>(() => readCachedRows());
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
 
+    if (rows.length > 0) {
+      setLoading(false);
+    }
+
     async function fetchShowcase() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("boards")
         .select("id, prompt, images")
         .eq("is_public", true)
+        .not("images", "is", null)
         .order("created_at", { ascending: false })
-        .limit(15);
-
-      if (!data || cancelled) return;
-
-      const rawImages: ShowcaseImage[] = data.flatMap((board) => {
-        const images = normalizeImages(board.images);
-        return images
-          .map((img) => (typeof img?.url === "string" ? img.url.trim() : ""))
-          .filter((url) => url.length > 0 && !url.startsWith("data:"))
-          .map((url) => ({ url, boardId: board.id, prompt: board.prompt }));
-      });
+        .limit(BOARD_LIMIT);
 
       if (cancelled) return;
-
-      const validImages = rawImages;
-
-      // Spread images so no two consecutive ones share the same board
-      function spreadByBoard(imgs: ShowcaseImage[]): ShowcaseImage[] {
-        const result: ShowcaseImage[] = [];
-        const remaining = [...imgs];
-        while (remaining.length > 0) {
-          const lastBoard = result.length > 0 ? result[result.length - 1].boardId : null;
-          const idx = remaining.findIndex((img) => img.boardId !== lastBoard);
-          if (idx === -1) {
-            result.push(...remaining);
-            break;
-          }
-          result.push(remaining.splice(idx, 1)[0]);
-        }
-        return result;
+      if (error || !data) {
+        setLoading(false);
+        return;
       }
 
-      const spread = spreadByBoard(validImages);
+      const previewImages: ShowcaseImage[] = data.flatMap((board) => {
+        const images = normalizeImages(board.images);
+        const previewUrl = images
+          .map((img) => (typeof img?.url === "string" ? img.url.trim() : ""))
+          .find((url) => url.length > 0 && !url.startsWith("data:"));
 
-      const maxPerRow = 10;
+        return previewUrl ? [{ url: previewUrl, boardId: board.id, prompt: board.prompt }] : [];
+      });
+
       const nextRows: ShowcaseImage[][] = [];
-      for (let i = 0; i < 2; i++) {
-        const start = i * maxPerRow;
-        const slice = spread.slice(start, start + maxPerRow);
+      for (let i = 0; i < ROW_COUNT; i++) {
+        const start = i * MAX_PER_ROW;
+        const slice = previewImages.slice(start, start + MAX_PER_ROW);
         if (slice.length > 0) nextRows.push(slice);
       }
 
-      setRows(nextRows);
+      if (cancelled) return;
+
+      if (nextRows.length > 0) {
+        setRows(nextRows);
+        writeCachedRows(nextRows);
+      }
+
+      setLoading(false);
     }
 
     fetchShowcase();
@@ -132,6 +164,26 @@ export default function ShowcaseTicker() {
       cancelled = true;
     };
   }, []);
+
+  if (rows.length === 0 && loading) {
+    return (
+      <section className="space-y-3 overflow-hidden py-12" aria-hidden="true">
+        <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
+          Loading recent boards from the community
+        </p>
+        {Array.from({ length: ROW_COUNT }).map((_, rowIndex) => (
+          <div key={`skeleton-row-${rowIndex}`} className="flex gap-3 overflow-hidden px-1">
+            {Array.from({ length: MAX_PER_ROW }).map((__, itemIndex) => (
+              <Skeleton
+                key={`skeleton-${rowIndex}-${itemIndex}`}
+                className="h-32 w-32 shrink-0 rounded-xl md:h-40 md:w-40"
+              />
+            ))}
+          </div>
+        ))}
+      </section>
+    );
+  }
 
   if (rows.length === 0) return null;
 
