@@ -67,6 +67,8 @@ export default function Index() {
       setError("No boards remaining. Upgrade your plan for more.");
       return;
     }
+    setGenerating(true);
+    setSubmittedPrompt(prompt);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
