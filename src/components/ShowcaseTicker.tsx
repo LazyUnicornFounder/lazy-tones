@@ -108,11 +108,29 @@ export default function ShowcaseTicker() {
         return;
       }
 
+      // Spread images so no two consecutive ones share the same board
+      function spreadByBoard(imgs: ShowcaseImage[]): ShowcaseImage[] {
+        const result: ShowcaseImage[] = [];
+        const remaining = [...imgs];
+        while (remaining.length > 0) {
+          const lastBoard = result.length > 0 ? result[result.length - 1].boardId : null;
+          const idx = remaining.findIndex((img) => img.boardId !== lastBoard);
+          if (idx === -1) {
+            result.push(...remaining);
+            break;
+          }
+          result.push(remaining.splice(idx, 1)[0]);
+        }
+        return result;
+      }
+
+      const spread = spreadByBoard(validImages);
+
       const maxPerRow = 10;
       const nextRows: ShowcaseImage[][] = [];
       for (let i = 0; i < 3; i++) {
         const start = i * maxPerRow;
-        const slice = validImages.slice(start, start + maxPerRow);
+        const slice = spread.slice(start, start + maxPerRow);
         if (slice.length > 0) nextRows.push(slice);
       }
 
