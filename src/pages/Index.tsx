@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +10,7 @@ import LoadingBoard from "@/components/LoadingBoard";
 import ShowcaseTicker from "@/components/ShowcaseTicker";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, LogOut } from "lucide-react";
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
