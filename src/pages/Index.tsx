@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
@@ -8,87 +8,10 @@ import LoadingBoard from "@/components/LoadingBoard";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
-
-const PROMPT_IDEAS = [
-  // Vibes & aesthetics
-  "Earthy wedding, terracotta + cream, rustic Italian",
-  "90s nostalgia, neon lights, VHS aesthetic",
-  "Scandinavian minimalism, light wood, soft neutrals",
-  "Tropical maximalism, bold prints, palm leaves",
-  "Dark academia, leather-bound books, candlelight",
-  "Coastal grandmother, linen, driftwood, sea glass",
-  "Y2K futurism, chrome, iridescent, bubblegum pink",
-  "Japanese wabi-sabi, imperfect ceramics, moss",
-  "Art deco glamour, gold leaf, emerald green",
-  "Cottagecore, wildflowers, handmade quilts, honey",
-  // Movies & TV
-  "The Grand Budapest Hotel — pastel pink, lobby elegance",
-  "Blade Runner 2049 — hazy orange, neon dystopia",
-  "Wes Anderson's Moonrise Kingdom — khaki, scouts, golden hour",
-  "Studio Ghibli — lush greens, cozy interiors, soft magic",
-  "The Great Gatsby — roaring 20s, champagne, midnight blue",
-  "Mad Men — mid-century office, bourbon, teal and walnut",
-  "Amélie — Montmartre, warm reds, whimsical Paris",
-  "Lost in Translation — Tokyo haze, pastel loneliness, neon",
-  // Places
-  "Morocco — spice markets, zellige tile, warm ochre",
-  "Amalfi Coast — lemon groves, azure water, sun-bleached stone",
-  "Tokyo at night — rain-slicked streets, kanji signs, neon",
-  "Patagonia — glacial blue, rugged peaks, wind-swept plains",
-  "Santorini — whitewash, cobalt domes, bougainvillea pink",
-  "Kyoto in autumn — crimson maples, temple stone, mist",
-  "Havana — vintage cars, peeling pastels, rum and cigars",
-  // Books & literature
-  "Haruki Murakami novel — quiet surrealism, jazz bars, rain",
-  "Lord of the Rings — mossy stone, ancient forests, candlelit halls",
-  "Dune — desert gold, brutalist architecture, spice haze",
-  "Pride & Prejudice — English countryside, muslin, morning light",
-  // Music
-  "Lo-fi hip hop study session — rainy window, warm lamp, coffee",
-  "Bowie's Ziggy Stardust — glam rock, lightning bolt, glitter",
-  "Frank Ocean Blonde — pool blue, sun-bleached, melancholy",
-  "Billie Eilish — slime green, darkness, oversized everything",
-  "Jazz club at midnight — smoky air, double bass, amber light",
-  "Fleetwood Mac Rumours — 70s California, golden light, vinyl",
-  "Daft Punk — chrome helmets, French house, LED grids",
-  // Food & drink
-  "Italian nonna's kitchen — fresh pasta, terracotta, olive oil",
-  "Tokyo ramen shop — steam, neon signage, wooden counter",
-  "French patisserie — macarons, marble, pastel pink and gold",
-  "Sunday farmers market — heirloom tomatoes, linen tote, sunlight",
-  "Mezcal bar — smoky agave, copper, dim candlelight",
-  // Fashion
-  "90s supermodel off-duty — leather jacket, sunglasses, taxi cab",
-  "Rei Kawakubo — deconstructed, avant-garde, monochrome",
-  "Old Céline — Phoebe Philo minimalism, camel, clean lines",
-  "Streetwear Tokyo — layered, techwear, Harajuku neon",
-  "Audrey Hepburn in Rome — ballet flats, Vespa, gelato",
-  // Nature
-  "Pacific Northwest — moss, fog, cedar, cabin fireplace",
-  "African savanna at golden hour — acacia trees, warm dust",
-  "Norwegian fjords — deep blue, slate gray, wool blankets",
-  "Cherry blossom season — sakura pink, gentle rain, temple paths",
-  "Deep ocean — bioluminescence, midnight blue, jellyfish glow",
-  // Tech & futurism
-  "Retro computing — CRT green, floppy disks, pixel art",
-  "Solarpunk utopia — rooftop gardens, bamboo, clean energy",
-  "Cyberpunk Akira — neon Tokyo, motorcycles, red capsule",
-  "Apple keynote — clean white, product hero, sans-serif",
-  // Art & culture
-  "Frida Kahlo — bold flowers, Mexican folk art, vibrant pain",
-  "Rothko chapel — color fields, contemplation, muted light",
-  "Basquiat — raw crowns, graffiti, neo-expressionist chaos",
-  "Vermeer — Dutch golden age, soft window light, blue and pearl",
-  "Ukiyo-e woodblock — Hokusai waves, flat color, Edo Japan",
-  // Life & mood
-  "Sunday morning — fresh sheets, croissant, golden light",
-  "Road trip across Route 66 — dusty motels, diners, open sky",
-  "Rainy day in London — cobblestones, tea, bookshop windows",
-  "Summer camp nostalgia — fireflies, canoes, friendship bracelets",
-  "Moving to a new city — cardboard boxes, first coffee, hope",
-];
+import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
+  const promptIdeas = useMemo(() => getDailyPromptIdeas(), []);
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
