@@ -103,17 +103,49 @@ export default function Index() {
 
   const exportRef = useRef<HTMLDivElement>(null);
 
+  const waitForExportAssets = async (node: HTMLDivElement) => {
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    );
+
+    if (document.fonts?.ready) {
+      await document.fonts.ready;
+    }
+
+    const images = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete) {
+              resolve();
+              return;
+            }
+
+            const done = () => resolve();
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+          })
+      )
+    );
+  };
+
   const handleExport = async () => {
     if (!exportRef.current || exporting) return;
+
+    const exportNode = exportRef.current;
     setExporting(true);
+
     try {
-      // Temporarily show the export wrapper
-      exportRef.current.style.display = "block";
-      const dataUrl = await toPng(exportRef.current, {
+      exportNode.style.display = "block";
+      await waitForExportAssets(exportNode);
+
+      const dataUrl = await toPng(exportNode, {
         backgroundColor: "#f5f4ed",
         pixelRatio: 2,
+        cacheBust: true,
       });
-      exportRef.current.style.display = "none";
+
       const link = document.createElement("a");
       link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
       link.href = dataUrl;
@@ -123,6 +155,7 @@ export default function Index() {
       console.error("Export failed:", err);
       toast.error("Export failed. Try again.");
     } finally {
+      exportNode.style.display = "none";
       setExporting(false);
     }
   };
