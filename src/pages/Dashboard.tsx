@@ -136,13 +136,9 @@ export default function Dashboard() {
             {profile?.credits_remaining ?? 0} credits
           </Badge>
         )}
-        {user ? (
+        {user && (
           <Button variant="ghost" size="icon" onClick={signOut}>
             <LogOut className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" onClick={signInWithGoogle}>
-            Sign in
           </Button>
         )}
       </header>

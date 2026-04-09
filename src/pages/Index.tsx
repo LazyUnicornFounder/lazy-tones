@@ -28,12 +28,10 @@ export default function Index() {
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
         <Link to="/" className="font-serif text-xl tracking-tight text-foreground">LazyMood</Link>
         <div className="flex items-center gap-4">
-          {user ? (
+          {user && (
             <Link to="/app">
               <Button size="sm">Dashboard</Button>
             </Link>
-          ) : (
-            <Button size="sm" variant="ghost" onClick={signInWithGoogle}>Sign in</Button>
           )}
         </div>
       </nav>
@@ -150,7 +148,6 @@ export default function Index() {
                 <Button
                   variant={tier.popular ? "default" : "outline"}
                   className="w-full rounded-xl"
-                  onClick={signInWithGoogle}
                 >
                   {tier.cta}
                 </Button>
