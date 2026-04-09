@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
     // Generate 6 images in parallel via Replicate
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
     const imagePromises = spec.image_prompts.slice(0, 6).map((p: string) =>
-      fetch("https://api.replicate.com/v1/predictions", {
+      fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${replicateToken}`,
@@ -138,7 +138,6 @@ Deno.serve(async (req) => {
           Prefer: "wait",
         },
         body: JSON.stringify({
-          version: "black-forest-labs/flux-2-pro",
           input: { prompt: p, aspect_ratio: "1:1" },
         }),
       }).then((r) => r.json())
