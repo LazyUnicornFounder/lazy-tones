@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Sparkles, Zap, Download, Share2 } from "lucide-react";
 import { exampleBoards } from "@/lib/example-boards";
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 
 const PRICING = [
   { name: "Free", price: "$0", period: "", credits: "2 boards total", features: ["AI-generated mood boards", "Public share links", "PNG export"], cta: "Get Started" },
