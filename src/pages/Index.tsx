@@ -152,6 +152,12 @@ export default function Index() {
                 Generate Board
               </Button>
             </div>
+            <button
+              onClick={() => setPrompt(PROMPT_IDEAS[ideaIndex])}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Try: <span className="italic">{PROMPT_IDEAS[ideaIndex]}</span>
+            </button>
             {error && (
               <div className="max-w-xl mx-auto p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-left">
                 <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
