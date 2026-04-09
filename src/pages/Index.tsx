@@ -156,7 +156,7 @@ export default function Index() {
         skipAutoScale: true,
       });
       const link = document.createElement("a");
-      link.download = `lazymood-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
+      link.download = `lazytones-${activeBoard?.prompt?.slice(0, 30).replace(/\s+/g, "-") || "board"}.png`;
       link.href = dataUrl;
       link.click();
       toast.success("Board exported as PNG!");
@@ -172,7 +172,7 @@ export default function Index() {
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4">
-        <span className="font-serif text-xl tracking-tight text-foreground">LazyMood</span>
+        <span className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</span>
         <div className="flex items-center gap-3">
           {user && creditsRemaining !== null && (
             <span className="text-sm text-muted-foreground">
@@ -352,8 +352,8 @@ export default function Index() {
         <div aria-hidden="true" style={{ position: "fixed", left: -3000, top: 0, pointerEvents: "none" }}>
           <div ref={exportRef} style={{ padding: 64, backgroundColor: "#f5f4ed", width: 960, boxSizing: "border-box" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
-              <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>LazyMood</span>
-              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazymood.lovable.app</span>
+              <span style={{ fontFamily: "Georgia, serif", fontSize: 24, color: "#141413", letterSpacing: "-0.02em" }}>Lazy Tones</span>
+              <span style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#5e5d59" }}>lazytones.lovable.app</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
               {activeBoard.images?.slice(0, 6).map((img, i) => (
@@ -391,7 +391,7 @@ export default function Index() {
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "center", marginTop: 32 }}>
-              <span style={{ fontSize: 12, color: "#5e5d59", fontFamily: "Inter, sans-serif" }}>lazymood.lovable.app</span>
+              <span style={{ fontSize: 12, color: "#5e5d59", fontFamily: "Inter, sans-serif" }}>lazytones.lovable.app</span>
             </div>
           </div>
         </div>
@@ -400,8 +400,8 @@ export default function Index() {
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
-          <span className="text-foreground">LazyMood is part of <a href="https://lazyfounderventures.com" target="_blank" rel="noopener noreferrer" className="font-serif underline underline-offset-2 hover:text-primary transition-colors">Lazy Founder Ventures</a></span>
-          <span>© {new Date().getFullYear()} LazyMood. All rights reserved.</span>
+          <span className="text-foreground">Lazy Tones is part of <a href="https://lazyfounderventures.com" target="_blank" rel="noopener noreferrer" className="font-serif underline underline-offset-2 hover:text-primary transition-colors">Lazy Founder Ventures</a></span>
+          <span>© {new Date().getFullYear()} Lazy Tones. All rights reserved.</span>
         </div>
       </footer>
     </div>
