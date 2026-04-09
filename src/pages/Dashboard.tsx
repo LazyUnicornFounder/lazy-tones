@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import { Board, Profile } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, RefreshCw, Download, Share2, LogOut, Image as ImageIcon, Sparkles } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Download, Share2, LogOut, Image as ImageIcon, Sparkles, AlertCircle } from "lucide-react";
 
 export default function Dashboard() {
   const { user, loading: authLoading, signOut, signInWithGoogle } = useAuth();
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [autoTriggered, setAutoTriggered] = useState(false);
 
   // No auth redirect — allow anonymous board generation
@@ -53,14 +54,19 @@ export default function Dashboard() {
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
     setGenerating(true);
+    setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("generate-board", {
+      const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
         body: { prompt },
       });
-      if (error) throw error;
+      if (fnError) throw fnError;
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
       if (data?.board) {
         const board = data.board as Board;
         setActiveBoard(board);
@@ -68,8 +74,9 @@ export default function Dashboard() {
         setProfile((prev) => prev ? { ...prev, credits_remaining: prev.credits_remaining - 1 } : prev);
         setPrompt("");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Generation failed:", err);
+      setError(err?.message || "Generation failed. Please try again.");
     } finally {
       setGenerating(false);
     }
