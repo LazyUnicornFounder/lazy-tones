@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     // Stagger starts slightly to reduce simultaneous rate limits
     const imagePromises = prompts.map((p, i) =>
       new Promise<{ url: string; sub_prompt: string }>((resolve) =>
-        setTimeout(() => resolve(generateImage(p, i)), i * 1500)
+        setTimeout(() => resolve(generateImage(p, i)), i * 2000)
       )
     );
     const images = await Promise.all(imagePromises);
