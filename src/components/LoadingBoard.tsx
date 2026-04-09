@@ -5,12 +5,9 @@ const STEPS = [
   "Crafting color palette",
   "Selecting typography",
   "Finding keywords",
-  "Generating image 1 of 6",
-  "Generating image 2 of 6",
-  "Generating image 3 of 6",
-  "Generating image 4 of 6",
-  "Generating image 5 of 6",
-  "Generating image 6 of 6",
+  "Generating image 1 of 3",
+  "Generating image 2 of 3",
+  "Generating image 3 of 3",
   "Assembling your board",
 ];
 
@@ -22,7 +19,7 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
   const [stepIndex, setStepIndex] = useState(0);
 
   useEffect(() => {
-    const timings = [2000, 3000, 2000, 2000, 8000, 8000, 8000, 8000, 8000, 8000, 3000];
+    const timings = [2000, 3000, 2000, 2000, 8000, 8000, 8000, 3000];
     if (stepIndex >= STEPS.length - 1) return;
     const timer = setTimeout(() => setStepIndex((i) => Math.min(i + 1, STEPS.length - 1)), timings[stepIndex] || 5000);
     return () => clearTimeout(timer);
@@ -54,7 +51,7 @@ export default function LoadingBoard({ prompt }: LoadingBoardProps) {
 
         {/* Skeleton grid */}
         <div className="grid grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+          {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
               className="aspect-square rounded-xl overflow-hidden relative"
