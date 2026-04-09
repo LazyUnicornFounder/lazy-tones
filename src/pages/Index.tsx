@@ -20,6 +20,21 @@ const PROMPT_IDEAS = [
   "Japanese wabi-sabi, imperfect ceramics, moss",
   "art deco glamour, gold leaf, emerald green",
   "cottagecore, wildflowers, handmade quilts, honey",
+  "The Grand Budapest Hotel — pastel pink, lobby elegance",
+  "Blade Runner 2049 — hazy orange, neon dystopia",
+  "Wes Anderson's Moonrise Kingdom — khaki, scouts, golden hour",
+  "Studio Ghibli — lush greens, cozy interiors, soft magic",
+  "The Great Gatsby — roaring 20s, champagne, midnight blue",
+  "Morocco — spice markets, zellige tile, warm ochre",
+  "Amalfi Coast — lemon groves, azure water, sun-bleached stone",
+  "Tokyo at night — rain-slicked streets, kanji signs, neon",
+  "Patagonia — glacial blue, rugged peaks, wind-swept plains",
+  "Santorini — whitewash, cobalt domes, bougainvillea pink",
+  "Haruki Murakami novel — quiet surrealism, jazz bars, rain",
+  "Lord of the Rings — mossy stone, ancient forests, candlelit halls",
+  "Dune — desert gold, brutalist architecture, spice haze",
+  "Pride & Prejudice — English countryside, muslin, morning light",
+  "Mad Men — mid-century office, bourbon, teal and walnut",
 ];
 
 export default function Index() {
