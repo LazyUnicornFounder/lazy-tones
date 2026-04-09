@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
-import Dashboard from "./pages/Dashboard";
 import BoardView from "./pages/BoardView";
 import NotFound from "./pages/NotFound";
 
@@ -20,7 +19,6 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/app" element={<Dashboard />} />
             <Route path="/board/:id" element={<BoardView />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
