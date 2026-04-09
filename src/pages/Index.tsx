@@ -9,6 +9,19 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, Check } from "lucide-react";
 
+const PROMPT_IDEAS = [
+  "earthy wedding, terracotta + cream, rustic Italian",
+  "90s nostalgia, neon lights, VHS aesthetic",
+  "Scandinavian minimalism, light wood, soft neutrals",
+  "tropical maximalism, bold prints, palm leaves",
+  "dark academia, leather-bound books, candlelight",
+  "coastal grandmother, linen, driftwood, sea glass",
+  "Y2K futurism, chrome, iridescent, bubblegum pink",
+  "Japanese wabi-sabi, imperfect ceramics, moss",
+  "art deco glamour, gold leaf, emerald green",
+  "cottagecore, wildflowers, handmade quilts, honey",
+];
+
 export default function Index() {
   const [prompt, setPrompt] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
