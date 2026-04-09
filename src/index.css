@@ -91,3 +91,19 @@
     font-weight: 500;
   }
 }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--accent)) 25%,
+    hsl(var(--accent-foreground) / 0.04) 50%,
+    hsl(var(--accent)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
