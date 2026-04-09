@@ -156,8 +156,9 @@ export default function Index() {
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={handleShare}>
                   <Share2 className="h-3.5 w-3.5 mr-1" /> Share
                 </Button>
-                <Button variant="outline" size="sm" className="rounded-xl">
-                  <Download className="h-3.5 w-3.5 mr-1" /> Export
+                <Button variant="outline" size="sm" className="rounded-xl" onClick={handleExport} disabled={exporting}>
+                  {exporting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+                  {exporting ? "Exporting…" : "Export"}
                 </Button>
               </div>
             </div>
