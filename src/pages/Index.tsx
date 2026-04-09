@@ -104,9 +104,9 @@ export default function Index() {
         <section className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h1 className="text-5xl md:text-6xl leading-tight tracking-tight text-foreground">
-              Mood boards in 30 seconds
+              Mood boards in 60 seconds
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto">
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
               Describe a vibe. Get images, palette, fonts, keywords. Export anywhere.
             </p>
             <div className="flex gap-3 max-w-xl mx-auto mt-8">
@@ -236,7 +236,7 @@ export default function Index() {
       {/* Footer */}
       <footer className="py-6 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
-          <span className="font-serif text-foreground">LazyMood</span>
+          <span className="text-foreground">LazyMood is part of <a href="https://lazyfounderventures.com" target="_blank" rel="noopener noreferrer" className="font-serif underline underline-offset-2 hover:text-primary transition-colors">Lazy Founder Ventures</a></span>
           <span>© {new Date().getFullYear()} LazyMood. All rights reserved.</span>
         </div>
       </footer>
