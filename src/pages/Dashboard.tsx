@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, RefreshCw, Download, Share2, LogOut, Image as ImageIcon, Sparkles } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [prompt, setPrompt] = useState(searchParams.get("prompt") || "");
@@ -17,15 +17,22 @@ export default function Dashboard() {
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [autoTriggered, setAutoTriggered] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) navigate("/");
-  }, [user, authLoading, navigate]);
+  // No auth redirect — allow anonymous board generation
 
+  // Auto-generate if arriving with prompt from landing page
   useEffect(() => {
-    if (!user) return;
-    fetchProfile();
-    fetchBoards();
+    if (prompt && !autoTriggered && !generating && !authLoading) {
+      setAutoTriggered(true);
+      handleGenerate();
+    }
+  }, [authLoading]);
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchBoards();
+    }
   }, [user]);
 
   const fetchProfile = async () => {
@@ -117,12 +124,20 @@ export default function Dashboard() {
             Generate
           </Button>
         </div>
-        <Badge variant="secondary" className="rounded-md text-xs">
-          {profile?.credits_remaining ?? 0} credits
-        </Badge>
-        <Button variant="ghost" size="icon" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-        </Button>
+        {user && (
+          <Badge variant="secondary" className="rounded-md text-xs">
+            {profile?.credits_remaining ?? 0} credits
+          </Badge>
+        )}
+        {user ? (
+          <Button variant="ghost" size="icon" onClick={signOut}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={signInWithGoogle}>
+            Sign in
+          </Button>
+        )}
       </header>
 
       <div className="flex flex-1 overflow-hidden">
