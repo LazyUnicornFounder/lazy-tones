@@ -33,7 +33,7 @@ function canLoadImage(url: string): Promise<boolean> {
 
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
   const items = images.length > 0 ? [...images, ...images] : [];
-  const duration = Math.max(60, images.length * 6);
+  const duration = Math.max(120, images.length * 12);
 
   return (
     <div className="relative overflow-hidden">
@@ -57,8 +57,9 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 decoding="async"
                 referrerPolicy="no-referrer"
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
+                onError={(e) => {
+                  const link = e.currentTarget.closest("a");
+                  if (link) link.style.display = "none";
                 }}
               />
             </div>
