@@ -64,7 +64,7 @@ export default function Index() {
       return;
     }
     if (creditsRemaining !== null && creditsRemaining <= 0) {
-      setError("No boards remaining. Upgrade your plan for more.");
+      setError("No boards remaining.");
       return;
     }
     setGenerating(true);
