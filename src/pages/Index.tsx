@@ -171,8 +171,24 @@ export default function Index() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Nav */}
-      <nav className="flex items-center justify-center px-6 py-4">
+      <nav className="flex items-center justify-between px-6 py-4">
         <span className="font-serif text-xl tracking-tight text-foreground">LazyMood</span>
+        <div className="flex items-center gap-3">
+          {user && creditsRemaining !== null && (
+            <span className="text-sm text-muted-foreground">
+              {creditsRemaining} board{creditsRemaining !== 1 ? "s" : ""} remaining
+            </span>
+          )}
+          {user ? (
+            <Button variant="outline" size="sm" className="rounded-xl" onClick={signOut}>
+              <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
+            </Button>
+          ) : (
+            <Button size="sm" className="rounded-xl" onClick={() => navigate("/auth")}>
+              Sign Up
+            </Button>
+          )}
+        </div>
       </nav>
 
       {/* Main content */}
