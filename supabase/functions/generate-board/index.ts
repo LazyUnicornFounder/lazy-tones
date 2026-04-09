@@ -127,32 +127,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Generate 6 images in parallel via Replicate
+    // Generate 6 images in parallel via Replicate with retry
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
     const prompts = spec.image_prompts.slice(0, 6);
-    const images: { url: string; sub_prompt: string }[] = [];
 
-    for (let i = 0; i < prompts.length; i++) {
-      try {
-        const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
-          method: "POST",
-          headers: {
-            Authorization: `Token ${replicateToken}`,
-            "Content-Type": "application/json",
-            Prefer: "wait",
-          },
-          body: JSON.stringify({
-            input: { prompt: prompts[i], aspect_ratio: "1:1" },
-          }),
-        });
-
-        // If rate limited, wait and retry once
-        if (resp.status === 429) {
-          const retryAfter = parseInt(resp.headers.get("retry-after") || "12", 10);
-          console.log(`Rate limited on tile ${i}, waiting ${retryAfter}s`);
-          await resp.text(); // consume body
-          await new Promise((r) => setTimeout(r, retryAfter * 1000));
-          const retry = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
+    async function generateImage(prompt: string, index: number, maxRetries = 3): Promise<{ url: string; sub_prompt: string }> {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
             method: "POST",
             headers: {
               Authorization: `Token ${replicateToken}`,
@@ -160,23 +142,39 @@ Deno.serve(async (req) => {
               Prefer: "wait",
             },
             body: JSON.stringify({
-              input: { prompt: prompts[i], aspect_ratio: "1:1" },
+              input: { prompt, aspect_ratio: "1:1" },
             }),
           });
-          const r = await retry.json();
-          const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
-          images.push({ url, sub_prompt: prompts[i] });
-        } else {
+
+          if (resp.status === 429) {
+            const retryAfter = parseInt(resp.headers.get("retry-after") || "5", 10);
+            console.log(`Rate limited on tile ${index} (attempt ${attempt + 1}), waiting ${retryAfter}s`);
+            await resp.text();
+            await new Promise((r) => setTimeout(r, retryAfter * 1000));
+            continue;
+          }
+
           const r = await resp.json();
+          if (r.error) {
+            console.error("Replicate error tile", index, r.error);
+            continue;
+          }
           const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
-          if (r.error) console.error("Replicate error tile", i, r.error);
-          images.push({ url, sub_prompt: prompts[i] });
+          if (url) return { url, sub_prompt: prompt };
+        } catch (e) {
+          console.error("Image gen failed for tile", index, "attempt", attempt + 1, e);
         }
-      } catch (e) {
-        console.error("Image gen failed for tile", i, e);
-        images.push({ url: "", sub_prompt: prompts[i] });
       }
+      return { url: "", sub_prompt: prompt };
     }
+
+    // Stagger starts slightly to reduce simultaneous rate limits
+    const imagePromises = prompts.map((p, i) =>
+      new Promise<{ url: string; sub_prompt: string }>((resolve) =>
+        setTimeout(() => resolve(generateImage(p, i)), i * 1500)
+      )
+    );
+    const images = await Promise.all(imagePromises);
 
     // Save board (user_id is null for anonymous users)
     const { data: board, error: insertError } = await supabase
