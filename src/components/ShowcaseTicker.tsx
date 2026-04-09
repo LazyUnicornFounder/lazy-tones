@@ -79,10 +79,11 @@ export default function ShowcaseTicker() {
     async function fetchShowcase() {
       const { data } = await supabase
         .from("boards")
-        .select("id, prompt, images")
+        .select("id, prompt")
         .eq("is_public", true)
+        .not("images", "is", null)
         .order("created_at", { ascending: false })
-        .limit(30);
+        .limit(15);
 
       if (!data || cancelled) return;
 
