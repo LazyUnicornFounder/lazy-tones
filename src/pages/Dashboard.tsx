@@ -21,9 +21,10 @@ export default function Dashboard() {
   // No auth redirect — allow anonymous board generation
 
   useEffect(() => {
-    if (!user) return;
-    fetchProfile();
-    fetchBoards();
+    if (user) {
+      fetchProfile();
+      fetchBoards();
+    }
   }, [user]);
 
   const fetchProfile = async () => {
@@ -115,12 +116,20 @@ export default function Dashboard() {
             Generate
           </Button>
         </div>
-        <Badge variant="secondary" className="rounded-md text-xs">
-          {profile?.credits_remaining ?? 0} credits
-        </Badge>
-        <Button variant="ghost" size="icon" onClick={signOut}>
-          <LogOut className="h-4 w-4" />
-        </Button>
+        {user && (
+          <Badge variant="secondary" className="rounded-md text-xs">
+            {profile?.credits_remaining ?? 0} credits
+          </Badge>
+        )}
+        {user ? (
+          <Button variant="ghost" size="icon" onClick={signOut}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" onClick={signInWithGoogle}>
+            Sign in
+          </Button>
+        )}
       </header>
 
       <div className="flex flex-1 overflow-hidden">
