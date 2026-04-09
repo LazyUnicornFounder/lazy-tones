@@ -222,18 +222,6 @@ export default function Index() {
               </div>
               <div className={`flex items-center justify-center gap-2 transition-opacity duration-700 ${ideaVisible ? 'opacity-100' : 'opacity-0'}`}>
                 <button
-                  onClick={() => {
-                    setIdeaVisible(false);
-                    setTimeout(() => {
-                      setIdeaIndex((prev) => (prev + 1) % promptIdeas.length);
-                      setIdeaVisible(true);
-                    }, 300);
-                  }}
-                  className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                </button>
-                <button
                   onClick={() => setPrompt(promptIdeas[ideaIndex])}
                   className="text-sm text-muted-foreground hover:text-foreground cursor-pointer"
                 >
