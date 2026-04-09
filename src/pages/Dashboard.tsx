@@ -80,7 +80,7 @@ export default function Dashboard() {
     } finally {
       setGenerating(false);
     }
-  };
+  }, [prompt, generating]);
 
   const handleRegenerateTile = async (tileIndex: number) => {
     if (!activeBoard) return;
