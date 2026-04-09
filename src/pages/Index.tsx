@@ -4,10 +4,12 @@ import { Board } from "@/types/board";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import LoadingBoard from "@/components/LoadingBoard";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle } from "lucide-react";
 
 export default function Index() {
   const [prompt, setPrompt] = useState("");
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
   const [activeBoard, setActiveBoard] = useState<Board | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -15,6 +17,7 @@ export default function Index() {
   const handleGenerate = useCallback(async () => {
     if (!prompt || generating) return;
     setGenerating(true);
+    setSubmittedPrompt(prompt);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
