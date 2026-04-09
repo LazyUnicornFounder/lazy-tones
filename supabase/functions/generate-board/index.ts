@@ -131,8 +131,23 @@ Deno.serve(async (req) => {
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
     const prompts = spec.image_prompts.slice(0, 6);
 
-    async function generateImage(originalPrompt: string, index: number, maxRetries = 4): Promise<{ url: string; sub_prompt: string }> {
+    const escapeXml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+
+    const createFallbackImage = (label: string) => {
+      const safeLabel = escapeXml(label).slice(0, 72);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#f5f4ed"/><rect x="56" y="56" width="1088" height="1088" rx="36" fill="#faf9f5" stroke="#d9d5cb" stroke-width="4"/><text x="600" y="500" text-anchor="middle" font-family="Georgia, serif" font-size="52" fill="#5e5d59">Image unavailable</text><text x="600" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#7a7974">${safeLabel}</text><text x="600" y="665" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#c96442">Try regenerating this tile</text></svg>`;
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    };
+
+    async function generateImage(originalPrompt: string, index: number, maxRetries = 5): Promise<{ url: string; sub_prompt: string }> {
       let prompt = originalPrompt;
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
           const resp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions", {
@@ -155,29 +170,51 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const r = await resp.json();
-          if (r.error) {
-            console.error("Replicate error tile", index, r.error);
-            // If flagged as sensitive, soften the prompt and retry
-            if (typeof r.error === "string" && r.error.includes("flagged")) {
-              prompt = `Abstract artistic mood board photo inspired by: ${originalPrompt.replace(/[^a-zA-Z0-9 ,]/g, "")}`;
+          const responseText = await resp.text();
+          let result: any = {};
+
+          try {
+            result = responseText ? JSON.parse(responseText) : {};
+          } catch {
+            console.error("Replicate parse error tile", index, responseText);
+          }
+
+          const message = typeof result?.error === "string"
+            ? result.error
+            : !resp.ok
+              ? responseText || `HTTP ${resp.status}`
+              : "";
+
+          if (message) {
+            console.error("Replicate error tile", index, message);
+            if (message.toLowerCase().includes("flagged") || message.toLowerCase().includes("sensitive")) {
+              prompt = `Abstract editorial photograph inspired by ${originalPrompt.replace(/[^a-zA-Z0-9 ,]/g, " ").trim()}`;
               console.log(`Softened prompt for tile ${index}: ${prompt}`);
             }
+            await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
             continue;
           }
-          const url = typeof r.output === "string" ? r.output : (Array.isArray(r.output) ? r.output[0] : "") || "";
-          if (url) return { url, sub_prompt: originalPrompt };
+
+          const url = typeof result.output === "string"
+            ? result.output
+            : (Array.isArray(result.output) ? result.output[0] : "") || "";
+
+          if (url) {
+            return { url, sub_prompt: originalPrompt };
+          }
         } catch (e) {
           console.error("Image gen failed for tile", index, "attempt", attempt + 1, e);
         }
+
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
       }
-      return { url: "", sub_prompt: originalPrompt };
+
+      return { url: createFallbackImage(originalPrompt), sub_prompt: originalPrompt };
     }
 
-    // Stagger starts slightly to reduce simultaneous rate limits
     const imagePromises = prompts.map((p, i) =>
       new Promise<{ url: string; sub_prompt: string }>((resolve) =>
-        setTimeout(() => resolve(generateImage(p, i)), i * 2000)
+        setTimeout(() => resolve(generateImage(p, i)), i * 1500)
       )
     );
     const images = await Promise.all(imagePromises);
