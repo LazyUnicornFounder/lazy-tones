@@ -137,7 +137,7 @@ export default function ShowcaseTicker() {
   return (
     <section className="space-y-3 overflow-hidden py-12">
       <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
-        Recent boards from the community
+        Click to see recent boards from the community
       </p>
       {rows.map((row, index) => (
         <TickerRow key={`row-${index}`} images={row} reverse={index % 2 === 1} />
