@@ -69,7 +69,7 @@ export default function Index() {
       </nav>
 
       {/* Main content */}
-      {!activeBoard ? (
+      {!activeBoard && !generating ? (
         /* Hero — prompt entry */
         <section className="flex-1 flex items-center justify-center px-6">
           <div className="max-w-3xl mx-auto text-center space-y-6">
@@ -92,12 +92,8 @@ export default function Index() {
                 disabled={!prompt || generating}
                 className="h-12 px-6 rounded-xl"
               >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                ) : (
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                )}
-                {generating ? "Generating…" : "Generate Board"}
+                <ArrowRight className="ml-1 h-4 w-4" />
+                Generate Board
               </Button>
             </div>
             {error && (
@@ -108,6 +104,9 @@ export default function Index() {
             )}
           </div>
         </section>
+      ) : generating ? (
+        /* Loading experience */
+        <LoadingBoard prompt={submittedPrompt} />
       ) : (
         /* Board result */
         <main className="flex-1 overflow-y-auto p-6">
