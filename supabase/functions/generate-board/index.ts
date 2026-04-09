@@ -61,14 +61,32 @@ Deno.serve(async (req) => {
     }
 
     // Get creative direction from Claude
-    const aiResp = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20250512",
-      max_tokens: 2000,
-      system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
-      messages: [{ role: "user", content: `Vibe: ${prompt}` }],
-    });
+    let aiResp;
+    try {
+      aiResp = await anthropic.messages.create({
+        model: "claude-haiku-4-5-20250512",
+        max_tokens: 2000,
+        system: [{ type: "text", text: SYSTEM, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: `Vibe: ${prompt}` }],
+      });
+    } catch (aiError: any) {
+      console.error("Anthropic API error:", aiError?.message || aiError);
+      const msg = aiError?.error?.error?.message || aiError?.message || "AI service unavailable";
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const spec = JSON.parse(aiResp.content[0].text);
+    let spec;
+    try {
+      spec = JSON.parse(aiResp.content[0].text);
+    } catch {
+      return new Response(JSON.stringify({ error: "Failed to parse AI response" }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Generate 6 images in parallel via Replicate
     const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
