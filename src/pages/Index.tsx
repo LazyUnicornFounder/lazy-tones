@@ -11,16 +11,16 @@ import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, A
 
 const PROMPT_IDEAS = [
   // Vibes & aesthetics
-  "earthy wedding, terracotta + cream, rustic Italian",
+  "Earthy wedding, terracotta + cream, rustic Italian",
   "90s nostalgia, neon lights, VHS aesthetic",
   "Scandinavian minimalism, light wood, soft neutrals",
-  "tropical maximalism, bold prints, palm leaves",
-  "dark academia, leather-bound books, candlelight",
-  "coastal grandmother, linen, driftwood, sea glass",
+  "Tropical maximalism, bold prints, palm leaves",
+  "Dark academia, leather-bound books, candlelight",
+  "Coastal grandmother, linen, driftwood, sea glass",
   "Y2K futurism, chrome, iridescent, bubblegum pink",
   "Japanese wabi-sabi, imperfect ceramics, moss",
-  "art deco glamour, gold leaf, emerald green",
-  "cottagecore, wildflowers, handmade quilts, honey",
+  "Art deco glamour, gold leaf, emerald green",
+  "Cottagecore, wildflowers, handmade quilts, honey",
   // Movies & TV
   "The Grand Budapest Hotel — pastel pink, lobby elegance",
   "Blade Runner 2049 — hazy orange, neon dystopia",
@@ -43,13 +43,12 @@ const PROMPT_IDEAS = [
   "Lord of the Rings — mossy stone, ancient forests, candlelit halls",
   "Dune — desert gold, brutalist architecture, spice haze",
   "Pride & Prejudice — English countryside, muslin, morning light",
-  "The Great Gatsby — jazz age, art deco, champagne gold",
   // Music
-  "lo-fi hip hop study session — rainy window, warm lamp, coffee",
+  "Lo-fi hip hop study session — rainy window, warm lamp, coffee",
   "Bowie's Ziggy Stardust — glam rock, lightning bolt, glitter",
   "Frank Ocean Blonde — pool blue, sun-bleached, melancholy",
   "Billie Eilish — slime green, darkness, oversized everything",
-  "jazz club at midnight — smoky air, double bass, amber light",
+  "Jazz club at midnight — smoky air, double bass, amber light",
   "Fleetwood Mac Rumours — 70s California, golden light, vinyl",
   "Daft Punk — chrome helmets, French house, LED grids",
   // Food & drink
@@ -57,36 +56,36 @@ const PROMPT_IDEAS = [
   "Tokyo ramen shop — steam, neon signage, wooden counter",
   "French patisserie — macarons, marble, pastel pink and gold",
   "Sunday farmers market — heirloom tomatoes, linen tote, sunlight",
-  "mezcal bar — smoky agave, copper, dim candlelight",
+  "Mezcal bar — smoky agave, copper, dim candlelight",
   // Fashion
   "90s supermodel off-duty — leather jacket, sunglasses, taxi cab",
   "Rei Kawakubo — deconstructed, avant-garde, monochrome",
-  "old Céline — Phoebe Philo minimalism, camel, clean lines",
-  "streetwear Tokyo — layered, techwear, Harajuku neon",
+  "Old Céline — Phoebe Philo minimalism, camel, clean lines",
+  "Streetwear Tokyo — layered, techwear, Harajuku neon",
   "Audrey Hepburn in Rome — ballet flats, Vespa, gelato",
   // Nature
   "Pacific Northwest — moss, fog, cedar, cabin fireplace",
   "African savanna at golden hour — acacia trees, warm dust",
   "Norwegian fjords — deep blue, slate gray, wool blankets",
-  "cherry blossom season — sakura pink, gentle rain, temple paths",
-  "deep ocean — bioluminescence, midnight blue, jellyfish glow",
+  "Cherry blossom season — sakura pink, gentle rain, temple paths",
+  "Deep ocean — bioluminescence, midnight blue, jellyfish glow",
   // Tech & futurism
-  "retro computing — CRT green, floppy disks, pixel art",
-  "solarpunk utopia — rooftop gardens, bamboo, clean energy",
-  "cyberpunk Akira — neon Tokyo, motorcycles, red capsule",
+  "Retro computing — CRT green, floppy disks, pixel art",
+  "Solarpunk utopia — rooftop gardens, bamboo, clean energy",
+  "Cyberpunk Akira — neon Tokyo, motorcycles, red capsule",
   "Apple keynote — clean white, product hero, sans-serif",
   // Art & culture
   "Frida Kahlo — bold flowers, Mexican folk art, vibrant pain",
   "Rothko chapel — color fields, contemplation, muted light",
   "Basquiat — raw crowns, graffiti, neo-expressionist chaos",
   "Vermeer — Dutch golden age, soft window light, blue and pearl",
-  "ukiyo-e woodblock — Hokusai waves, flat color, Edo Japan",
+  "Ukiyo-e woodblock — Hokusai waves, flat color, Edo Japan",
   // Life & mood
   "Sunday morning — fresh sheets, croissant, golden light",
-  "road trip across Route 66 — dusty motels, diners, open sky",
-  "rainy day in London — cobblestones, tea, bookshop windows",
-  "summer camp nostalgia — fireflies, canoes, friendship bracelets",
-  "moving to a new city — cardboard boxes, first coffee, hope",
+  "Road trip across Route 66 — dusty motels, diners, open sky",
+  "Rainy day in London — cobblestones, tea, bookshop windows",
+  "Summer camp nostalgia — fireflies, canoes, friendship bracelets",
+  "Moving to a new city — cardboard boxes, first coffee, hope",
 ];
 
 export default function Index() {
