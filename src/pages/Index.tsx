@@ -89,6 +89,15 @@ const PROMPT_IDEAS = [
   "moving to a new city — cardboard boxes, first coffee, hope",
 ];
 
+export default function Index() {
+  const [prompt, setPrompt] = useState("");
+  const [submittedPrompt, setSubmittedPrompt] = useState("");
+  const [activeBoard, setActiveBoard] = useState<Board | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [regeneratingTile, setRegeneratingTile] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const boardRef = useRef<HTMLDivElement>(null);
   const [ideaIndex, setIdeaIndex] = useState(() => Math.floor(Math.random() * PROMPT_IDEAS.length));
   const [ideaVisible, setIdeaVisible] = useState(true);
 
