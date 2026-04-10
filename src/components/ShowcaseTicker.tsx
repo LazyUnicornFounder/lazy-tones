@@ -163,8 +163,14 @@ function writeCachedRows(rows: ShowcaseImage[][]) {
 }
 
 function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: boolean }) {
-  const items = images.length > 0 ? [...images, ...images] : [];
-  const duration = Math.max(90, images.length * 10);
+  // Repeat images enough times to guarantee no visible gaps during scroll.
+  // Each tile is ~160px + 12px gap ≈ 172px; we need at least 2× viewport width.
+  const repeatCount = images.length > 0 ? Math.max(4, Math.ceil((2 * 1920) / (images.length * 172))) : 0;
+  const items: ShowcaseImage[] = [];
+  for (let r = 0; r < repeatCount; r++) {
+    items.push(...images);
+  }
+  const duration = Math.max(60, images.length * 8);
   const eagerImageCount = images.length;
 
   return (
