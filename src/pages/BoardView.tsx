@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +8,18 @@ import { Loader2, ArrowRight, Image as ImageIcon } from "lucide-react";
 
 export default function BoardView() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [board, setBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") navigate("/");
+  }, [navigate]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [handleEscape]);
 
   useEffect(() => {
     if (!id) return;
