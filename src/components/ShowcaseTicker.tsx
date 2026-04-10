@@ -1,30 +1,129 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface ShowcaseImage {
   url: string;
-  boardId: string;
+  boardId?: string;
   prompt: string;
 }
 
-const SHOWCASE_CACHE_KEY = "showcase-ticker:v2";
+const SHOWCASE_CACHE_KEY = "showcase-ticker:v3";
+const SHOWCASE_FEED_PATH = "showcase/feed.json";
 const ROW_COUNT = 2;
 const MAX_PER_ROW = 6;
 const BOARD_LIMIT = ROW_COUNT * MAX_PER_ROW;
 
-function normalizeImages(value: unknown): Array<{ url?: string }> {
-  if (!value) return [];
-  if (Array.isArray(value)) return value as Array<{ url?: string }>;
-  if (typeof value === "string") {
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+const STARTER_VIBES = [
+  { prompt: "Wes Anderson scouts at golden hour", palette: ["#faf9f5", "#eadfce", "#c96442"] },
+  { prompt: "Amalfi stone, lemons, and sea glass", palette: ["#faf9f5", "#efe5bf", "#8b6f4e"] },
+  { prompt: "Bowie glam with midnight navy accents", palette: ["#faf9f5", "#d7c2b5", "#7d4b3f"] },
+  { prompt: "Coastal grandmother linen and driftwood", palette: ["#faf9f5", "#ddd1c4", "#b78563"] },
+  { prompt: "Roaring twenties champagne after dark", palette: ["#faf9f5", "#dfcfb3", "#8a5a44"] },
+  { prompt: "Ukiyo-e waves and inked woodgrain", palette: ["#faf9f5", "#d5c4b3", "#6f5a4d"] },
+  { prompt: "90s off-duty leather and taxi light", palette: ["#faf9f5", "#e5d8c8", "#a65d41"] },
+  { prompt: "Scandinavian wood, wool, and winter sun", palette: ["#faf9f5", "#e6dccf", "#8b725d"] },
+  { prompt: "Art deco lounge in brushed brass", palette: ["#faf9f5", "#e7d7bd", "#9f6c45"] },
+  { prompt: "Mid-century mountain house fireplace", palette: ["#faf9f5", "#decfbe", "#8a624b"] },
+  { prompt: "Paris bookstore paperbacks and espresso", palette: ["#faf9f5", "#e8d8cb", "#9d5f46"] },
+  { prompt: "Studio pottery, oat milk, soft shadow", palette: ["#faf9f5", "#e3d6ca", "#b66f4d"] },
+] as const;
+
+function escapeXml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function wrapPrompt(prompt: string) {
+  const words = prompt.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > 18 && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
     }
   }
-  return [];
+
+  if (current) lines.push(current);
+  return lines.slice(0, 2);
+}
+
+function createStarterPreview(prompt: string, palette: readonly [string, string, string]) {
+  const [background, surface, accent] = palette;
+  const lines = wrapPrompt(prompt);
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+      <rect width="320" height="320" rx="30" fill="${background}"/>
+      <circle cx="88" cy="92" r="54" fill="${surface}"/>
+      <circle cx="244" cy="86" r="62" fill="${accent}" fill-opacity="0.16"/>
+      <rect x="42" y="178" width="236" height="96" rx="22" fill="#faf9f5" stroke="#e6ddd2"/>
+      <rect x="42" y="42" width="52" height="8" rx="4" fill="#141413" fill-opacity="0.14"/>
+      <rect x="104" y="42" width="38" height="8" rx="4" fill="#141413" fill-opacity="0.08"/>
+      <rect x="42" y="286" width="52" height="10" rx="5" fill="${accent}" fill-opacity="0.9"/>
+      <rect x="100" y="286" width="34" height="10" rx="5" fill="#d8c8ba"/>
+      <rect x="140" y="286" width="22" height="10" rx="5" fill="#8b6f4e" fill-opacity="0.35"/>
+      ${lines
+        .map(
+          (line, index) =>
+            `<text x="42" y="${220 + index * 28}" fill="#141413" font-family="Georgia, serif" font-size="19">${escapeXml(line)}</text>`
+        )
+        .join("")}
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function buildRows(items: ShowcaseImage[]) {
+  const nextRows: ShowcaseImage[][] = [];
+
+  for (let i = 0; i < ROW_COUNT; i++) {
+    const start = i * MAX_PER_ROW;
+    const slice = items.slice(start, start + MAX_PER_ROW);
+    if (slice.length > 0) nextRows.push(slice);
+  }
+
+  return nextRows;
+}
+
+function createStarterRows() {
+  return buildRows(
+    STARTER_VIBES.map((item) => ({
+      prompt: item.prompt,
+      url: createStarterPreview(item.prompt, item.palette),
+    }))
+  );
+}
+
+function normalizeFeedRows(value: unknown): ShowcaseImage[][] {
+  const parsed = Array.isArray(value)
+    ? value
+    : value && typeof value === "object" && Array.isArray((value as { items?: unknown[] }).items)
+      ? (value as { items: unknown[] }).items
+      : [];
+
+  const items = parsed
+    .filter((item): item is ShowcaseImage => {
+      if (!item || typeof item !== "object") return false;
+      const candidate = item as ShowcaseImage;
+      return typeof candidate.url === "string" && candidate.url.trim().length > 0 && typeof candidate.prompt === "string" && candidate.prompt.trim().length > 0;
+    })
+    .map((item) => ({
+      url: item.url.trim(),
+      prompt: item.prompt.trim(),
+      boardId: typeof item.boardId === "string" && item.boardId.trim().length > 0 ? item.boardId.trim() : undefined,
+    }))
+    .slice(0, BOARD_LIMIT);
+
+  return buildRows(items);
 }
 
 function readCachedRows(): ShowcaseImage[][] {
@@ -43,8 +142,8 @@ function readCachedRows(): ShowcaseImage[][] {
         row.filter(
           (item): item is ShowcaseImage =>
             typeof item?.url === "string" &&
-            typeof item?.boardId === "string" &&
-            typeof item?.prompt === "string"
+            typeof item?.prompt === "string" &&
+            (typeof item?.boardId === "string" || typeof item?.boardId === "undefined")
         )
       )
       .filter((row) => row.length > 0);
@@ -77,30 +176,42 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
         style={{ animationDuration: `${duration}s` }}
       >
         {items.map((img, i) => (
-          <a
-            key={`${img.boardId}-${i}`}
-            href={`/board/${img.boardId}`}
-            className="group block shrink-0"
-            aria-label={`Open ${img.prompt}`}
-          >
-            <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
-              <img
-                src={img.url}
-                alt={`Mood board preview for ${img.prompt}`}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading={i < eagerImageCount ? "eager" : "lazy"}
-                fetchPriority={i < Math.min(eagerImageCount, 4) ? "high" : "low"}
-                decoding="async"
-                width={160}
-                height={160}
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const link = e.currentTarget.closest("a");
-                  if (link) link.style.display = "none";
-                }}
-              />
-            </div>
-          </a>
+          <div key={`${img.boardId ?? img.prompt}-${i}`} className="group block shrink-0">
+            {img.boardId ? (
+              <a href={`/board/${img.boardId}`} aria-label={`Open ${img.prompt}`}>
+                <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
+                  <img
+                    src={img.url}
+                    alt={`Mood board preview for ${img.prompt}`}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading={i < eagerImageCount ? "eager" : "lazy"}
+                    fetchPriority={i < Math.min(eagerImageCount, 4) ? "high" : "low"}
+                    decoding="async"
+                    width={160}
+                    height={160}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const tile = e.currentTarget.closest(".group");
+                      if (tile) tile.setAttribute("style", "display:none");
+                    }}
+                  />
+                </div>
+              </a>
+            ) : (
+              <div className="h-32 w-32 overflow-hidden rounded-xl bg-accent md:h-40 md:w-40">
+                <img
+                  src={img.url}
+                  alt={`Starter vibe for ${img.prompt}`}
+                  className="h-full w-full object-cover"
+                  loading={i < eagerImageCount ? "eager" : "lazy"}
+                  fetchPriority={i < Math.min(eagerImageCount, 4) ? "high" : "low"}
+                  decoding="async"
+                  width={160}
+                  height={160}
+                />
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -108,55 +219,34 @@ function TickerRow({ images, reverse }: { images: ShowcaseImage[]; reverse: bool
 }
 
 export default function ShowcaseTicker() {
-  const [rows, setRows] = useState<ShowcaseImage[][]>(() => readCachedRows());
-  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<ShowcaseImage[][]>(() => {
+    const cachedRows = readCachedRows();
+    return cachedRows.length > 0 ? cachedRows : createStarterRows();
+  });
 
   useEffect(() => {
     let cancelled = false;
 
-    if (rows.length > 0) {
-      setLoading(false);
-    }
-
     async function fetchShowcase() {
-      const { data, error } = await supabase
-        .from("boards")
-        .select("id, prompt, images")
-        .eq("is_public", true)
-        .not("images", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(BOARD_LIMIT);
+      try {
+        const { data } = supabase.storage.from("showcase-images").getPublicUrl(SHOWCASE_FEED_PATH);
+        const cacheKey = Math.floor(Date.now() / 300000);
+        const response = await fetch(`${data.publicUrl}?v=${cacheKey}`, {
+          headers: { accept: "application/json" },
+        });
 
-      if (cancelled) return;
-      if (error || !data) {
-        setLoading(false);
-        return;
-      }
+        if (!response.ok || cancelled) return;
 
-      const previewImages: ShowcaseImage[] = data.flatMap((board) => {
-        const images = normalizeImages(board.images);
-        const previewUrl = images
-          .map((img) => (typeof img?.url === "string" ? img.url.trim() : ""))
-          .find((url) => url.length > 0 && !url.startsWith("data:"));
+        const payload = await response.json();
+        const nextRows = normalizeFeedRows(payload);
 
-        return previewUrl ? [{ url: previewUrl, boardId: board.id, prompt: board.prompt }] : [];
-      });
+        if (cancelled || nextRows.length === 0) return;
 
-      const nextRows: ShowcaseImage[][] = [];
-      for (let i = 0; i < ROW_COUNT; i++) {
-        const start = i * MAX_PER_ROW;
-        const slice = previewImages.slice(start, start + MAX_PER_ROW);
-        if (slice.length > 0) nextRows.push(slice);
-      }
-
-      if (cancelled) return;
-
-      if (nextRows.length > 0) {
         setRows(nextRows);
         writeCachedRows(nextRows);
+      } catch {
+        // Keep starter previews or cached rows when the live feed is unavailable.
       }
-
-      setLoading(false);
     }
 
     fetchShowcase();
@@ -165,32 +255,12 @@ export default function ShowcaseTicker() {
     };
   }, []);
 
-  if (rows.length === 0 && loading) {
-    return (
-      <section className="space-y-3 overflow-hidden py-12" aria-hidden="true">
-        <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
-          Loading recent boards from the community
-        </p>
-        {Array.from({ length: ROW_COUNT }).map((_, rowIndex) => (
-          <div key={`skeleton-row-${rowIndex}`} className="flex gap-3 overflow-hidden px-1">
-            {Array.from({ length: MAX_PER_ROW }).map((__, itemIndex) => (
-              <Skeleton
-                key={`skeleton-${rowIndex}-${itemIndex}`}
-                className="h-32 w-32 shrink-0 rounded-xl md:h-40 md:w-40"
-              />
-            ))}
-          </div>
-        ))}
-      </section>
-    );
-  }
-
   if (rows.length === 0) return null;
 
   return (
     <section className="space-y-3 overflow-hidden py-12">
       <p className="mb-6 text-center text-xs uppercase tracking-wide text-muted-foreground">
-        Click to see recent boards from the community
+        Explore starter vibes and fresh community boards
       </p>
       {rows.map((row, index) => (
         <TickerRow key={`row-${index}`} images={row} reverse={index % 2 === 1} />
