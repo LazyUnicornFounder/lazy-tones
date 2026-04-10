@@ -3,6 +3,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ensureShowcaseCoverUrl, getPreviewSource, syncShowcaseFeedItem } from "../_shared/showcase.ts";
 
 const createFallbackImage = () => {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><rect width="1200" height="1200" fill="#f5f4ed"/><circle cx="280" cy="280" r="190" fill="#e8ded0"/><circle cx="910" cy="330" r="210" fill="#c96442" fill-opacity="0.18"/><circle cx="420" cy="880" r="220" fill="#d7c2b5" fill-opacity="0.7"/><rect x="500" y="640" width="420" height="220" rx="40" fill="#faf9f5" stroke="#e2dbd2" stroke-width="4"/><path d="M570 785C625 700 705 675 780 700C840 720 878 770 900 830" fill="none" stroke="#8b6f4e" stroke-opacity="0.35" stroke-width="18" stroke-linecap="round"/></svg>`;
@@ -122,6 +123,10 @@ async function generateImage(replicateToken: string | undefined, apiKey: string 
   return { url: gatewayImage.trim() || createFallbackImage(), sub_prompt: originalPrompt };
 }
 
+const edgeRuntime = (globalThis as typeof globalThis & {
+  EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
+}).EdgeRuntime;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -172,6 +177,29 @@ Deno.serve(async (req) => {
       .single();
 
     if (updateError) throw updateError;
+
+    const showcaseSync = (async () => {
+      if (board.is_public === false) return;
+
+      const previewSource = getPreviewSource(images);
+      const coverUrl = await ensureShowcaseCoverUrl(supabase, board_id, previewSource);
+
+      if (!coverUrl) return;
+
+      await syncShowcaseFeedItem(supabase, {
+        boardId: board_id,
+        prompt: board.prompt,
+        url: coverUrl,
+      });
+    })().catch((error) => {
+      console.error("showcase sync error:", error);
+    });
+
+    if (edgeRuntime?.waitUntil) {
+      edgeRuntime.waitUntil(showcaseSync);
+    } else {
+      await showcaseSync;
+    }
 
     return new Response(JSON.stringify({ board: updatedBoard }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ensureShowcaseCoverUrl, getPreviewSource, syncShowcaseFeedItem } from "../_shared/showcase.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,6 +35,10 @@ function base64ToUint8Array(b64: string): Uint8Array {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }
+
+const edgeRuntime = (globalThis as typeof globalThis & {
+  EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
+}).EdgeRuntime;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -204,6 +209,27 @@ Deno.serve(async (req) => {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+  }
+
+  const showcaseSync = (async () => {
+    const previewSource = getPreviewSource(images);
+    const coverUrl = await ensureShowcaseCoverUrl(supabase, boardId, previewSource);
+
+    if (!coverUrl) return;
+
+    await syncShowcaseFeedItem(supabase, {
+      boardId,
+      prompt,
+      url: coverUrl,
+    });
+  })().catch((error) => {
+    console.error("showcase sync error:", error);
+  });
+
+  if (edgeRuntime?.waitUntil) {
+    edgeRuntime.waitUntil(showcaseSync);
+  } else {
+    await showcaseSync;
   }
 
   console.log(`✓ Board created: ${boardId} with ${images.length} images`);

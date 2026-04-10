@@ -3,6 +3,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ensureShowcaseCoverUrl, getPreviewSource, syncShowcaseFeedItem } from "../_shared/showcase.ts";
 
 const SYSTEM = `You are a creative director. Given a vibe, return a mood board spec as JSON:
 {
@@ -12,6 +13,10 @@ const SYSTEM = `You are a creative director. Given a vibe, return a mood board s
   "keywords": [8-12 descriptive single words]
 }
 Return ONLY the JSON, no markdown.`;
+
+const edgeRuntime = (globalThis as typeof globalThis & {
+  EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
+}).EdgeRuntime;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -128,7 +133,6 @@ Deno.serve(async (req) => {
     }
 
     // Generate 6 images with guarded fallbacks
-    const replicateToken = Deno.env.get("REPLICATE_API_TOKEN");
     const SHOT_FALLBACKS = [
       "hero editorial composition",
       "material texture close-up",
@@ -200,9 +204,12 @@ Deno.serve(async (req) => {
     );
 
     // Save board (user_id is null for anonymous users)
+    const boardId = crypto.randomUUID();
+
     const { data: board, error: insertError } = await supabase
       .from("boards")
       .insert({
+        id: boardId,
         user_id: userId,
         prompt,
         palette: spec.palette,
@@ -214,6 +221,27 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) throw insertError;
+
+    const showcaseSync = (async () => {
+      const previewSource = getPreviewSource(images);
+      const coverUrl = await ensureShowcaseCoverUrl(supabase, boardId, previewSource);
+
+      if (!coverUrl) return;
+
+      await syncShowcaseFeedItem(supabase, {
+        boardId,
+        prompt,
+        url: coverUrl,
+      });
+    })().catch((error) => {
+      console.error("showcase sync error:", error);
+    });
+
+    if (edgeRuntime?.waitUntil) {
+      edgeRuntime.waitUntil(showcaseSync);
+    } else {
+      await showcaseSync;
+    }
 
     // Decrement credits if signed in
     if (userId) {
