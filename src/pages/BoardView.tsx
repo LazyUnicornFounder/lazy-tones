@@ -4,25 +4,58 @@ import { supabase } from "@/integrations/supabase/client";
 import { Board } from "@/types/board";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
+
+const SHOWCASE_FEED_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/showcase-images/showcase/feed.json`;
+
+interface FeedItem {
+  boardId: string;
+  prompt: string;
+  url: string;
+}
 
 export default function BoardView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [board, setBoard] = useState<Board | null>(null);
   const [loading, setLoading] = useState(true);
+  const [siblings, setSiblings] = useState<{ prev: string | null; next: string | null }>({ prev: null, next: null });
 
-  const handleEscape = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Escape") navigate("/");
+  // Load sibling board IDs from the showcase feed
+  useEffect(() => {
+    if (!id) return;
+    fetch(SHOWCASE_FEED_URL)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        const items: FeedItem[] = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
+        const idx = items.findIndex((item) => item.boardId === id);
+        if (idx === -1) return;
+        setSiblings({
+          prev: idx > 0 ? items[idx - 1].boardId : null,
+          next: idx < items.length - 1 ? items[idx + 1].boardId : null,
+        });
+      })
+      .catch(() => {});
+  }, [id]);
+
+  const goTo = useCallback((boardId: string | null) => {
+    if (boardId) navigate(`/board/${boardId}`);
   }, [navigate]);
 
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Escape") navigate("/");
+    if (e.key === "ArrowLeft") goTo(siblings.prev);
+    if (e.key === "ArrowRight") goTo(siblings.next);
+  }, [navigate, goTo, siblings]);
+
   useEffect(() => {
-    window.addEventListener("keydown", handleEscape);
-    return () => window.removeEventListener("keydown", handleEscape);
-  }, [handleEscape]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
     supabase
       .from("boards")
       .select("*")
@@ -54,12 +87,45 @@ export default function BoardView() {
   return (
     <div className="min-h-screen">
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto">
-        <Link to="/" className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</Link>
-        <Link to="/">
-          <Button size="sm" className="rounded-xl">
-            Make your own <ArrowRight className="ml-1 h-3.5 w-3.5" />
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/" className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</Link>
+          {(siblings.prev || siblings.next) && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                disabled={!siblings.prev}
+                onClick={() => goTo(siblings.prev)}
+                aria-label="Previous board"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                disabled={!siblings.next}
+                onClick={() => goTo(siblings.next)}
+                aria-label="Next board"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/">
+            <Button variant="outline" size="sm" className="rounded-xl">
+              <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Home
+            </Button>
+          </Link>
+          <Link to="/">
+            <Button size="sm" className="rounded-xl">
+              Make your own <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+          </Link>
+        </div>
       </nav>
 
       <div className="max-w-4xl mx-auto px-6 py-12 space-y-8">
