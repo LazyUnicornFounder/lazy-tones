@@ -8,9 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import LoadingBoard from "@/components/LoadingBoard";
 import ShowcaseTicker from "@/components/ShowcaseTicker";
+import BoardSidebar from "@/components/BoardSidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 import { toPng } from "html-to-image";
-import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, LogOut } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, LogOut, PanelLeft } from "lucide-react";
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
 
 export default function Index() {
@@ -53,7 +55,6 @@ export default function Index() {
     if (pending) {
       localStorage.removeItem("pending_prompt");
       setPrompt(pending);
-      // Trigger generation on next tick after state is set
       setTimeout(() => {
         setPrompt((p) => {
           if (p) {
@@ -86,10 +87,11 @@ export default function Index() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleGenerate = useCallback(async () => {
-    if (!prompt || generating) return;
+  const handleGenerate = useCallback(async (overridePrompt?: string) => {
+    const p = overridePrompt || prompt;
+    if (!p || generating) return;
     if (!user) {
-      localStorage.setItem("pending_prompt", prompt);
+      localStorage.setItem("pending_prompt", p);
       navigate("/auth");
       return;
     }
@@ -98,11 +100,11 @@ export default function Index() {
       return;
     }
     setGenerating(true);
-    setSubmittedPrompt(prompt);
+    setSubmittedPrompt(p);
     setError(null);
     try {
       const { data, error: fnError } = await supabase.functions.invoke("generate-board", {
-        body: { prompt },
+        body: { prompt: p },
       });
       if (fnError) throw fnError;
       if (data?.error) {
@@ -198,25 +200,17 @@ export default function Index() {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col">
+  const mainContent = (
+    <div className="min-h-screen flex flex-col flex-1">
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
+          {user && <SidebarTrigger className="-ml-1 mr-1" />}
           <span className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</span>
           <Badge className="text-[10px] px-1.5 py-0 rounded-md font-normal bg-primary text-primary-foreground">beta</Badge>
         </div>
         <div className="flex items-center gap-3">
-          {user && creditsRemaining !== null && (
-            <span className="text-sm text-muted-foreground">
-              {creditsRemaining} board{creditsRemaining !== 1 ? "s" : ""} remaining
-            </span>
-          )}
-          {user ? (
-            <Button variant="outline" size="sm" className="rounded-xl" onClick={signOut}>
-              <LogOut className="h-3.5 w-3.5 mr-1" /> Sign Out
-            </Button>
-          ) : (
+          {!user && creditsRemaining === null && (
             <Button size="sm" className="rounded-xl" onClick={() => navigate("/auth")}>
               Sign Up Free
             </Button>
@@ -247,7 +241,7 @@ export default function Index() {
                   onKeyDown={(e) => e.key === "Enter" && prompt && handleGenerate()}
                 />
                 <Button
-                  onClick={handleGenerate}
+                  onClick={() => handleGenerate()}
                   disabled={!prompt || generating}
                   className="h-12 px-6 rounded-xl w-full sm:w-auto"
                 >
@@ -282,7 +276,7 @@ export default function Index() {
         <main className="flex-1 overflow-y-auto p-6">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground italic">"{activeBoard.prompt}"</p>
+              <p className="text-sm text-muted-foreground italic">"{activeBoard!.prompt}"</p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="rounded-xl" onClick={() => setActiveBoard(null)}>
                   New Board
@@ -298,7 +292,7 @@ export default function Index() {
             </div>
 
             <div ref={boardRef} className="grid grid-cols-3 gap-4">
-              {activeBoard.images?.slice(0, 6).map((img, i) => (
+              {activeBoard!.images?.slice(0, 6).map((img, i) => (
                 <div key={i} className="relative group aspect-square bg-accent rounded-xl overflow-hidden">
                   {regeneratingTile === i ? (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 skeleton-shimmer">
@@ -333,7 +327,7 @@ export default function Index() {
                 </div>
               ))}
 
-              {Array.from({ length: Math.max(0, 6 - (activeBoard.images?.length || 0)) }).map((_, i) => (
+              {Array.from({ length: Math.max(0, 6 - (activeBoard!.images?.length || 0)) }).map((_, i) => (
                 <div key={`empty-${i}`} className="aspect-square bg-accent rounded-xl flex items-center justify-center">
                   <ImageIcon className="h-8 w-8 text-muted-foreground/40" />
                 </div>
@@ -342,7 +336,7 @@ export default function Index() {
               <div className="bg-card rounded-xl border border-border p-4 space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Palette</p>
                 <div className="space-y-1.5">
-                  {activeBoard.palette?.map((color, i) => (
+                  {activeBoard!.palette?.map((color, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-md" style={{ backgroundColor: color }} />
                       <span className="text-xs text-muted-foreground font-mono">{color}</span>
@@ -356,11 +350,11 @@ export default function Index() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-xs text-muted-foreground">Heading</p>
-                    <p className="text-lg font-serif text-foreground">{activeBoard.fonts?.heading}</p>
+                    <p className="text-lg font-serif text-foreground">{activeBoard!.fonts?.heading}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Body</p>
-                    <p className="text-sm text-foreground">{activeBoard.fonts?.body}</p>
+                    <p className="text-sm text-foreground">{activeBoard!.fonts?.body}</p>
                   </div>
                 </div>
               </div>
@@ -368,7 +362,7 @@ export default function Index() {
               <div className="bg-card rounded-xl border border-border p-4 space-y-2">
                 <p className="text-xs text-muted-foreground font-medium">Keywords</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {activeBoard.keywords?.map((kw) => (
+                  {activeBoard!.keywords?.map((kw) => (
                     <Badge key={kw} variant="secondary" className="text-xs font-normal rounded-md">
                       {kw}
                     </Badge>
@@ -435,4 +429,23 @@ export default function Index() {
       </footer>
     </div>
   );
+
+  // Signed-in users get sidebar layout
+  if (user) {
+    return (
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <BoardSidebar
+            onGenerate={(p) => handleGenerate(p)}
+            generating={generating}
+            activeBoardId={activeBoard?.id}
+          />
+          {mainContent}
+        </div>
+      </SidebarProvider>
+    );
+  }
+
+  // Signed-out: no sidebar
+  return mainContent;
 }
