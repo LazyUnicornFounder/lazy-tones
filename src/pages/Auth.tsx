@@ -1,32 +1,79 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Auth() {
   const { user, loading, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!loading && user) navigate("/");
   }, [user, loading, navigate]);
 
+  const handleClose = useCallback(() => navigate("/"), [navigate]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [handleClose]);
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password || submitting) return;
+    setSubmitting(true);
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        toast.success("Check your email to confirm your account!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Authentication failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="flex items-center justify-center px-6 py-4">
+      <nav className="flex items-center justify-between px-6 py-4">
         <a href="/" className="font-serif text-xl tracking-tight text-foreground">Lazy Tones</a>
+        <button onClick={handleClose} className="p-2 rounded-lg hover:bg-accent transition-colors">
+          <X className="h-5 w-5 text-muted-foreground" />
+        </button>
       </nav>
 
       <section className="flex-1 flex items-center justify-center px-6">
         <div className="max-w-sm w-full text-center space-y-6">
           <h1 className="text-3xl tracking-tight text-foreground">
-            Sign in to Lazy Tones
+            {isSignUp ? "Sign up for" : "Sign in to"} Lazy Tones
           </h1>
           <p className="text-muted-foreground">
-            Create up to 3 mood boards for free.
+            Create up to 10 mood boards for free.
           </p>
+
           <Button
             onClick={signInWithGoogle}
+            variant="outline"
             className="w-full h-12 rounded-xl text-base"
           >
             <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
@@ -37,6 +84,43 @@ export default function Auth() {
             </svg>
             Continue with Google
           </Button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          <form onSubmit={handleEmailAuth} className="space-y-3 text-left">
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="h-12 rounded-xl bg-card border-border"
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="h-12 rounded-xl bg-card border-border"
+              minLength={6}
+              required
+            />
+            <Button type="submit" disabled={submitting} className="w-full h-12 rounded-xl text-base">
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSignUp ? "Create Account" : "Sign In"}
+            </Button>
+          </form>
+
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+          </button>
         </div>
       </section>
     </div>
