@@ -64,32 +64,32 @@ export default function BoardSidebar({ onGenerate, generating, activeBoardId }: 
   if (!user) return null;
 
   return (
-    <Sidebar className="border-r border-border bg-card">
-      <SidebarContent className="p-4 space-y-4">
+    <Sidebar className="border-r border-border bg-card w-72 min-w-[288px]">
+      <SidebarContent className="p-5 space-y-5 overflow-y-auto">
         {/* Prompt input */}
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs text-muted-foreground font-medium px-0">
             New Board
           </SidebarGroupLabel>
-          <SidebarGroupContent className="space-y-2">
+           <SidebarGroupContent className="space-y-3">
             <div className="flex gap-2">
               <Input
                 value={sidebarPrompt}
                 onChange={(e) => setSidebarPrompt(e.target.value)}
                 placeholder="Describe a vibe…"
-                className="h-9 text-sm rounded-lg bg-background border-border"
+                className="h-10 text-sm rounded-lg bg-background border-border"
                 onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               />
               <Button
                 size="sm"
-                className="h-9 px-3 rounded-lg shrink-0"
+                className="h-10 px-3 rounded-lg shrink-0"
                 onClick={handleSubmit}
                 disabled={!sidebarPrompt.trim() || generating}
               >
                 <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Try</p>
               {promptIdeas.map((idea) => (
                 <button
@@ -98,7 +98,7 @@ export default function BoardSidebar({ onGenerate, generating, activeBoardId }: 
                     setSidebarPrompt(idea);
                     onGenerate(idea);
                   }}
-                  className="block w-full text-left text-xs text-muted-foreground hover:text-foreground truncate py-0.5 transition-colors"
+                  className="block w-full text-left text-[13px] leading-snug text-muted-foreground hover:text-foreground py-1 transition-colors"
                 >
                   {idea}
                 </button>
