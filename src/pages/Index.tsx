@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { toPng } from "html-to-image";
 import { Loader2, ArrowRight, RefreshCw, Download, Share2, Image as ImageIcon, AlertCircle, LogOut, PanelLeft } from "lucide-react";
 import { getDailyPromptIdeas } from "@/lib/prompt-ideas";
+import OpenSourceBanner from "@/components/OpenSourceBanner";
 
 export default function Index() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -441,7 +442,8 @@ export default function Index() {
             activeBoardId={activeBoard?.id}
           />
           {mainContent}
-        </div>
+              <OpenSourceBanner />
+    </div>
       </SidebarProvider>
     );
   }
