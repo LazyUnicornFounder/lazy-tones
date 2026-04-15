@@ -422,6 +422,7 @@ export default function Index() {
       )}
 
       {/* Footer */}
+      <OpenSourceBanner />
       <footer className="py-6 px-6 border-t border-border">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
           <span className="text-foreground">Lazy Tones is part of <a href="https://lazyfounderventures.com" target="_blank" rel="noopener noreferrer" className="font-serif underline underline-offset-2 hover:text-primary transition-colors">Lazy Founder Ventures</a></span>
@@ -442,8 +443,7 @@ export default function Index() {
             activeBoardId={activeBoard?.id}
           />
           {mainContent}
-              <OpenSourceBanner />
-    </div>
+        </div>
       </SidebarProvider>
     );
   }
